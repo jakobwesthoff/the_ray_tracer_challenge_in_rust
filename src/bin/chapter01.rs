@@ -1,7 +1,6 @@
-mod tuple;
-mod util;
+extern crate the_ray_tracer_challenge as raytracer;
 
-use tuple::*;
+use raytracer::tuple::*;
 
 #[derive(Debug)]
 struct Environment {

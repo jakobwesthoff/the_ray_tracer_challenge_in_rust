@@ -1,6 +1,6 @@
 use std::ops;
 
-use super::util::*;
+use crate::util::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Tuple {

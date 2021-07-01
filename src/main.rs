@@ -120,6 +120,22 @@ impl Tuple {
     pub fn normalize(&self) -> Self {
         *self / self.magnitude()
     }
+
+    pub fn dot(&self, other: &Tuple) -> f64 {
+        self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
+    }
+
+    pub fn cross(&self, other: &Tuple) -> Tuple {
+        if !self.is_vector() || !other.is_vector() {
+            panic!("Cross product can only be calculated for two vectors.");
+        }
+
+        Tuple::vector(
+            self.y * other.z - self.z * other.y,
+            self.z * other.x - self.x * other.z,
+            self.x * other.y - self.y * other.x,
+        )
+    }
 }
 
 fn main() {
@@ -356,6 +372,36 @@ mod tests {
         assert_eq!(actual_result, expected_result);
     }
 
-    
+    #[test]
+    fn the_dot_product_of_two_vector() {
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
 
+        let expected_result = 20.0;
+        let actual_result = a.dot(&b);
+
+        assert_eq!(actual_result, expected_result);
+    }
+
+    #[test]
+    fn the_cross_product_of_two_vectors_1() {
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+
+        let expected_result = Tuple::vector(-1.0, 2.0, -1.0);
+        let actual_result = a.cross(&b);
+
+        assert_eq!(actual_result, expected_result);
+    }
+
+    #[test]
+    fn the_cross_product_of_two_vectors_2() {
+        let a = Tuple::vector(1.0, 2.0, 3.0);
+        let b = Tuple::vector(2.0, 3.0, 4.0);
+
+        let expected_result = Tuple::vector(1.0, -2.0, 1.0);
+        let actual_result = b.cross(&a);
+
+        assert_eq!(actual_result, expected_result);
+    }
 }

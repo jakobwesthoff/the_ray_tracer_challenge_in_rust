@@ -14,6 +14,10 @@ impl Color {
   pub fn new(red: f64, green: f64, blue: f64) -> Self {
     Color { red, green, blue }
   }
+
+  pub fn black() -> Self {
+    Color::new(0.0, 0.0, 0.0)
+  }
 }
 
 impl Add for Color {

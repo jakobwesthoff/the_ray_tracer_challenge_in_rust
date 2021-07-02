@@ -1,9 +1,10 @@
 use std::cmp::PartialEq;
 use std::ops::{Add, Mul, Sub};
+use std::vec::Vec;
 
 use super::util::*;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Color {
   pub red: f64,
   pub green: f64,
@@ -72,6 +73,36 @@ impl PartialEq for Color {
   }
 }
 
+pub struct Canvas {
+  pub width: usize,
+  pub height: usize,
+
+  pixels: Vec<Color>,
+}
+
+impl Canvas {
+  pub fn new(width: usize, height: usize) -> Self {
+    Self {
+      width,
+      height,
+      pixels: vec![Color::black(); width * height],
+    }
+  }
+
+  pub fn pixel_at(&self, x: usize, y: usize) -> &Color {
+    &self.pixels[self.get_pixel_index(x, y)]
+  }
+
+  pub fn write_color(&mut self, x: usize, y: usize, color: Color) {
+    let index = self.get_pixel_index(x, y);
+    self.pixels[index] = color;
+  }
+
+  fn get_pixel_index(&self, x: usize, y: usize) -> usize {
+    y * self.width + x
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -127,5 +158,31 @@ mod tests {
     let actual_result = c1 * c2;
 
     assert_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn creating_a_canvas() {
+    let c = Canvas::new(10, 20);
+
+    assert_eq!(10, c.width);
+    assert_eq!(20, c.height);
+
+    for x in 0..c.width - 1 {
+      for y in 0..c.height - 1 {
+        assert_eq!(*c.pixel_at(x, y), Color::black())
+      }
+    }
+  }
+
+  #[test]
+  fn wrinting_pixels_to_a_canvas() {
+    let mut c = Canvas::new(10, 20);
+
+    let red = Color::new(1.0, 0.0, 0.0);
+    c.write_color(2, 3, red);
+
+    let expected_result = Color::new(1.0, 0.0, 0.0);
+
+    assert_eq!(expected_result, *c.pixel_at(2, 3));
   }
 }

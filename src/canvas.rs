@@ -4,7 +4,7 @@ use std::vec::Vec;
 
 use super::util::*;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Color {
   pub red: f64,
   pub green: f64,
@@ -89,8 +89,8 @@ impl Canvas {
     }
   }
 
-  pub fn pixel_at(&self, x: usize, y: usize) -> &Color {
-    &self.pixels[self.get_pixel_index(x, y)]
+  pub fn pixel_at(&self, x: usize, y: usize) -> Color {
+    self.pixels[self.get_pixel_index(x, y)]
   }
 
   pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
@@ -169,7 +169,7 @@ mod tests {
 
     for x in 0..c.width - 1 {
       for y in 0..c.height - 1 {
-        assert_eq!(*c.pixel_at(x, y), Color::black())
+        assert_eq!(c.pixel_at(x, y), Color::black())
       }
     }
   }
@@ -183,6 +183,6 @@ mod tests {
 
     let expected_result = Color::new(1.0, 0.0, 0.0);
 
-    assert_eq!(expected_result, *c.pixel_at(2, 3));
+    assert_eq!(expected_result, c.pixel_at(2, 3));
   }
 }

@@ -93,7 +93,7 @@ impl Canvas {
     &self.pixels[self.get_pixel_index(x, y)]
   }
 
-  pub fn write_color(&mut self, x: usize, y: usize, color: Color) {
+  pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
     let index = self.get_pixel_index(x, y);
     self.pixels[index] = color;
   }
@@ -175,11 +175,11 @@ mod tests {
   }
 
   #[test]
-  fn wrinting_pixels_to_a_canvas() {
+  fn writing_pixels_to_a_canvas() {
     let mut c = Canvas::new(10, 20);
 
     let red = Color::new(1.0, 0.0, 0.0);
-    c.write_color(2, 3, red);
+    c.write_pixel(2, 3, red);
 
     let expected_result = Color::new(1.0, 0.0, 0.0);
 

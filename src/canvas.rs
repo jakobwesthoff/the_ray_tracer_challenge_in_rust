@@ -2,7 +2,7 @@ use std::cmp::PartialEq;
 use std::ops::{Add, Mul, Sub};
 use std::vec::Vec;
 
-use super::util::*;
+use super::fuzzy_eq::*;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color {

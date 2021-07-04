@@ -1,6 +1,6 @@
 use std::ops;
 
-use crate::util::*;
+use crate::fuzzy_eq::*;
 
 #[derive(Debug, Copy, Clone)]
 pub struct Tuple {

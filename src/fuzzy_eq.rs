@@ -14,10 +14,6 @@ impl FuzzyEq<f64> for f64 {
     }
 }
 
-pub fn f64_fuzzy_eq(left: f64, right: f64) -> bool {
-    (left - right).abs() < EPISILON
-}
-
 // Not really sure what I am doing here, as I don't have a great understanding of macros yet.
 // Feel free to fix or enhance in the future.
 #[macro_export]

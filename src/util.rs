@@ -1,3 +1,5 @@
+const EPISILON: f64 = 0.00001;
+
 pub trait FuzzyEq<T> {
     fn fuzzy_eq(&self, other: &T) -> bool;
 
@@ -6,9 +8,14 @@ pub trait FuzzyEq<T> {
     }
 }
 
+impl FuzzyEq<f64> for f64 {
+    fn fuzzy_eq(&self, other: &f64) -> bool {
+        (*self - *other).abs() < EPISILON
+    }
+}
+
 pub fn f64_fuzzy_eq(left: f64, right: f64) -> bool {
-    let epsilon = 0.00001;
-    (left - right).abs() < epsilon
+    (left - right).abs() < EPISILON
 }
 
 // Not really sure what I am doing here, as I don't have a great understanding of macros yet.

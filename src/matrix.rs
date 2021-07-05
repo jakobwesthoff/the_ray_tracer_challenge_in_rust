@@ -195,6 +195,18 @@ impl Mul<Tuple> for Matrix4f {
   }
 }
 
+impl Matrix4f {
+  pub fn transpose(&self) -> Matrix4f {
+    let mut m = Matrix4f::new();
+    for row in 0..4 {
+      for column in 0..4 {
+        m[column][row] = self[row][column];
+      }
+    }
+    return m;
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
@@ -410,6 +422,27 @@ mod tests {
 
     let expected_result = m1;
     let actual_result = m1 * m2;
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn transposing_a_4x4_matrix() {
+    let m = Matrix4f::from([
+      [0.0, 9.0, 3.0, 0.0],
+      [9.0, 8.0, 0.0, 8.0],
+      [1.0, 8.0, 5.0, 3.0],
+      [0.0, 0.0, 5.0, 8.0],
+    ]);
+
+    let expected_result = Matrix4f::from([
+      [0.0, 9.0, 1.0, 0.0],
+      [9.0, 8.0, 8.0, 0.0],
+      [3.0, 0.0, 5.0, 5.0],
+      [0.0, 8.0, 3.0, 8.0],
+    ]);
+
+    let actual_result = m.transpose();
 
     assert_fuzzy_eq!(actual_result, expected_result);
   }

@@ -1,6 +1,8 @@
-use crate::fuzzy_eq::*;
 use std::convert::From;
 use std::ops::{Index, IndexMut, Mul};
+
+use crate::fuzzy_eq::*;
+use crate::tuple::*;
 
 type Matrix2fArrayRow = [f64; 2];
 type Matrix2fArray = [Matrix2fArrayRow; 2];
@@ -177,6 +179,19 @@ impl Mul<Matrix4f> for Matrix4f {
       }
     }
     return m;
+  }
+}
+
+impl Mul<Tuple> for Matrix4f {
+  type Output = Tuple;
+
+  fn mul(self, other: Tuple) -> Self::Output {
+    Tuple::new(
+      self[0][0] * other.x + self[0][1] * other.y + self[0][2] * other.z + self[0][3] * other.w,
+      self[1][0] * other.x + self[1][1] * other.y + self[1][2] * other.z + self[1][3] * other.w,
+      self[2][0] * other.x + self[2][1] * other.y + self[2][2] * other.z + self[2][3] * other.w,
+      self[3][0] * other.x + self[3][1] * other.y + self[3][2] * other.z + self[3][3] * other.w,
+    )
   }
 }
 
@@ -367,8 +382,30 @@ mod tests {
   }
 
   #[test]
+  fn a_4x4_matrix_multiplied_by_a_point() {
+    let m = Matrix4f::from([
+      [1.0, 2.0, 3.0, 4.0],
+      [2.0, 4.0, 4.0, 2.0],
+      [8.0, 6.0, 4.0, 1.0],
+      [0.0, 0.0, 0.0, 1.0],
+    ]);
+    let p = Tuple::point(1.0, 2.0, 3.0);
+
+    let expected_result = Tuple::point(18.0, 24.0, 33.0);
+
+    let actual_result = m * p;
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
   fn multiplying_a_4x4_matrix_by_the_identity_matrix() {
-    let m1 = Matrix4f::from([[0.0, 1.0, 2.0, 4.0], [1.0, 2.0, 4.0, 8.0], [2.0, 4.0, 8.0, 16.0], [4.0, 8.0, 16.0, 32.0]]);
+    let m1 = Matrix4f::from([
+      [0.0, 1.0, 2.0, 4.0],
+      [1.0, 2.0, 4.0, 8.0],
+      [2.0, 4.0, 8.0, 16.0],
+      [4.0, 8.0, 16.0, 32.0],
+    ]);
     let m2 = Matrix4f::identity();
 
     let expected_result = m1;

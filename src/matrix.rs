@@ -233,6 +233,20 @@ impl Matrix3f {
 
     return m;
   }
+
+  pub fn minor(&self, row: usize, column: usize) -> f64 {
+    self.submatrix(row, column).determinant()
+  }
+
+  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+    let minor = self.minor(row, column);
+    if (row + column) % 2 == 0 {
+      // Even value
+      return minor;
+    } else {
+      return -minor;
+    }
+  }
 }
 
 impl Matrix4f {
@@ -555,5 +569,33 @@ mod tests {
     let actual_result = m.submatrix(2, 1);
 
     assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn calculate_the_minor_of_a_3x3_matrix() {
+    let m = Matrix3f::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
+
+    let sub = m.submatrix(1, 0);
+    let determinant = sub.determinant();
+    let minor = m.minor(1, 0);
+
+    assert_fuzzy_eq!(25.0, determinant);
+    assert_fuzzy_eq!(25.0, minor);
+  }
+
+  #[test]
+  fn calculating_a_cofactor_of_a_3x3_matrix() {
+    let m = Matrix3f::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
+
+    let minor1 = m.minor(0, 0);
+    let minor2 = m.minor(1, 0);
+
+    let cofactor1 = m.cofactor(0, 0);
+    let cofactor2 = m.cofactor(1, 0);
+
+    assert_fuzzy_eq!(-12.0, minor1);
+    assert_fuzzy_eq!(-12.0, cofactor1);
+    assert_fuzzy_eq!(25.0, minor2);
+    assert_fuzzy_eq!(-25.0, cofactor2);
   }
 }

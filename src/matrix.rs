@@ -247,6 +247,15 @@ impl Matrix3f {
       return -minor;
     }
   }
+
+  pub fn determinant(&self) -> f64 {
+    let mut determinant: f64 = 0.0;
+    for column in 0..3 {
+      determinant += self.cofactor(0, column) * self[0][column];
+    }
+
+    determinant
+  }
 }
 
 impl Matrix4f {
@@ -290,6 +299,29 @@ impl Matrix4f {
     }
 
     return m;
+  }
+
+  pub fn minor(&self, row: usize, column: usize) -> f64 {
+    self.submatrix(row, column).determinant()
+  }
+
+  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+    let minor = self.minor(row, column);
+    if (row + column) % 2 == 0 {
+      // Even value
+      return minor;
+    } else {
+      return -minor;
+    }
+  }
+
+  pub fn determinant(&self) -> f64 {
+    let mut determinant: f64 = 0.0;
+    for column in 0..4 {
+      determinant += self.cofactor(0, column) * self[0][column];
+    }
+
+    determinant
   }
 }
 
@@ -597,5 +629,46 @@ mod tests {
     assert_fuzzy_eq!(-12.0, cofactor1);
     assert_fuzzy_eq!(25.0, minor2);
     assert_fuzzy_eq!(-25.0, cofactor2);
+  }
+
+  #[test]
+  fn calculate_the_determinant_of_a_3x3_matrix() {
+    let m = Matrix3f::from([[1.0, 2.0, 6.0], [-5.0, 8.0, -4.0], [2.0, 6.0, 4.0]]);
+
+    let cofactor00 = m.cofactor(0, 0);
+    let cofactor01 = m.cofactor(0, 1);
+    let cofactor02 = m.cofactor(0, 2);
+
+    let determinant = m.determinant();
+
+    assert_fuzzy_eq!(56.0, cofactor00);
+    assert_fuzzy_eq!(12.0, cofactor01);
+    assert_fuzzy_eq!(-46.0, cofactor02);
+
+    assert_fuzzy_eq!(-196.0, determinant);
+  }
+
+  #[test]
+  fn calculating_the_determinant_of_a_4x4_matrix() {
+    let m = Matrix4f::from([
+      [-2.0, -8.0, 3.0, 5.0],
+      [-3.0, 1.0, 7.0, 3.0],
+      [1.0, 2.0, -9.0, 6.0],
+      [-6.0, 7.0, 7.0, -9.0],
+    ]);
+
+    let cofactor00 = m.cofactor(0, 0);
+    let cofactor01 = m.cofactor(0, 1);
+    let cofactor02 = m.cofactor(0, 2);
+    let cofactor03 = m.cofactor(0, 3);
+
+    let determinant = m.determinant();
+
+    assert_fuzzy_eq!(690.0, cofactor00);
+    assert_fuzzy_eq!(447.0, cofactor01);
+    assert_fuzzy_eq!(210.0, cofactor02);
+    assert_fuzzy_eq!(51.0, cofactor03);
+
+    assert_fuzzy_eq!(-4071.0, determinant);
   }
 }

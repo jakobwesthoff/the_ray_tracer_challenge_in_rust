@@ -11,17 +11,17 @@ type Matrix4fArray = [Matrix4fArrayRow; 4];
 
 // @TODO: Maybe refactor to utilize one Matrix struct in the future.
 //        Are const template parameters an option?
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Matrix2f {
   data: Matrix2fArray,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Matrix3f {
   data: Matrix3fArray,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 pub struct Matrix4f {
   data: Matrix4fArray,
 }
@@ -51,6 +51,15 @@ impl Matrix4f {
       [0.0, 0.0, 0.0, 0.0],
       [0.0, 0.0, 0.0, 0.0],
       [0.0, 0.0, 0.0, 0.0],
+    ])
+  }
+
+  pub fn identity() -> Matrix4f {
+    Matrix4f::from([
+      [1.0, 0.0, 0.0, 0.0],
+      [0.0, 1.0, 0.0, 0.0],
+      [0.0, 0.0, 1.0, 0.0],
+      [0.0, 0.0, 0.0, 1.0],
     ])
   }
 }
@@ -352,6 +361,17 @@ mod tests {
       [16.0, 26.0, 46.0, 42.0],
     ]);
 
+    let actual_result = m1 * m2;
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn multiplying_a_4x4_matrix_by_the_identity_matrix() {
+    let m1 = Matrix4f::from([[0.0, 1.0, 2.0, 4.0], [1.0, 2.0, 4.0, 8.0], [2.0, 4.0, 8.0, 16.0], [4.0, 8.0, 16.0, 32.0]]);
+    let m2 = Matrix4f::identity();
+
+    let expected_result = m1;
     let actual_result = m1 * m2;
 
     assert_fuzzy_eq!(actual_result, expected_result);

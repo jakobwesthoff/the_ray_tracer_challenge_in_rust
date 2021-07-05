@@ -1,6 +1,6 @@
 use crate::fuzzy_eq::*;
 use std::convert::From;
-use std::ops::Index;
+use std::ops::{Index, IndexMut, Mul};
 
 type Matrix2fArrayRow = [f64; 2];
 type Matrix2fArray = [Matrix2fArrayRow; 2];
@@ -44,6 +44,29 @@ impl From<Matrix4fArray> for Matrix4f {
   }
 }
 
+impl Matrix4f {
+  pub fn new() -> Matrix4f {
+    Matrix4f::from([
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0],
+    ])
+  }
+}
+
+impl Matrix3f {
+  pub fn new() -> Matrix3f {
+    Matrix3f::from([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+  }
+}
+
+impl Matrix2f {
+  pub fn new() -> Matrix2f {
+    Matrix2f::from([[0.0, 0.0], [0.0, 0.0]])
+  }
+}
+
 impl Index<usize> for Matrix2f {
   type Output = Matrix2fArrayRow;
 
@@ -65,6 +88,24 @@ impl Index<usize> for Matrix4f {
 
   fn index(&self, index: usize) -> &Self::Output {
     &self.data[index]
+  }
+}
+
+impl IndexMut<usize> for Matrix2f {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
+}
+
+impl IndexMut<usize> for Matrix3f {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
+}
+
+impl IndexMut<usize> for Matrix4f {
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
   }
 }
 
@@ -109,6 +150,24 @@ impl FuzzyEq<Matrix4f> for Matrix4f {
       && self[3][1].fuzzy_eq(&other[3][1])
       && self[3][2].fuzzy_eq(&other[3][2])
       && self[3][3].fuzzy_eq(&other[3][3])
+  }
+}
+
+impl Mul<Matrix4f> for Matrix4f {
+  type Output = Matrix4f;
+
+  fn mul(self, other: Matrix4f) -> Self::Output {
+    let mut m = Matrix4f::new();
+
+    for row in 0..4 {
+      for column in 0..4 {
+        m[row][column] = self[row][0] * other[0][column]
+          + self[row][1] * other[1][column]
+          + self[row][2] * other[2][column]
+          + self[row][3] * other[3][column];
+      }
+    }
+    return m;
   }
 }
 
@@ -186,7 +245,7 @@ mod tests {
 
   #[test]
   fn matrix_equality_with_identical_3x3_matrices() {
-    let m1= Matrix3f::from([
+    let m1 = Matrix3f::from([
       [0.123456789, 1.0, 2.0],
       [2.0, 3.0, 4.0],
       [5.0, 6.0, 7.7777777777777777],
@@ -269,5 +328,32 @@ mod tests {
     ]);
 
     assert_fuzzy_ne!(m1, m2);
+  }
+
+  #[test]
+  fn multiplying_two_4x4_matrices() {
+    let m1 = Matrix4f::from([
+      [1.0, 2.0, 3.0, 4.0],
+      [5.0, 6.0, 7.0, 8.0],
+      [9.0, 8.0, 7.0, 6.0],
+      [5.0, 4.0, 3.0, 2.0],
+    ]);
+    let m2 = Matrix4f::from([
+      [-2.0, 1.0, 2.0, 3.0],
+      [3.0, 2.0, 1.0, -1.0],
+      [4.0, 3.0, 6.0, 5.0],
+      [1.0, 2.0, 7.0, 8.0],
+    ]);
+
+    let expected_result = Matrix4f::from([
+      [20.0, 22.0, 50.0, 48.0],
+      [44.0, 54.0, 114.0, 108.0],
+      [40.0, 58.0, 110.0, 102.0],
+      [16.0, 26.0, 46.0, 42.0],
+    ]);
+
+    let actual_result = m1 * m2;
+
+    assert_fuzzy_eq!(actual_result, expected_result);
   }
 }

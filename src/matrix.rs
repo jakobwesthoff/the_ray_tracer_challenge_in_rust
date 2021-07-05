@@ -195,6 +195,46 @@ impl Mul<Tuple> for Matrix4f {
   }
 }
 
+impl Matrix2f {
+  pub fn determinant(&self) -> f64 {
+    self[0][0] * self[1][1] - self[0][1] * self[1][0]
+  }
+}
+
+impl Matrix3f {
+  // @FIXME: Find a nicer way to do this.
+  pub fn submatrix(&self, row: usize, column: usize) -> Matrix2f {
+    let mut m = Matrix2f::new();
+    let mut source_row: usize = 0;
+    let mut source_column: usize = 0;
+    let mut target_row: usize = 0;
+    let mut target_column: usize = 0;
+
+    while target_row < 2 {
+      if source_row == row {
+        // Skip row to be removed
+        source_row += 1;
+      }
+      while target_column < 2 {
+        if source_column == column {
+          // Skip column to be removed
+          source_column += 1;
+        }
+        m[target_row][target_column] = self[source_row][source_column];
+
+        source_column += 1;
+        target_column += 1;
+      }
+      source_row += 1;
+      source_column = 0;
+      target_row += 1;
+      target_column = 0;
+    }
+
+    return m;
+  }
+}
+
 impl Matrix4f {
   pub fn transpose(&self) -> Matrix4f {
     let mut m = Matrix4f::new();
@@ -203,6 +243,38 @@ impl Matrix4f {
         m[column][row] = self[row][column];
       }
     }
+    return m;
+  }
+
+  // @FIXME: Find a nicer way to do this.
+  pub fn submatrix(&self, row: usize, column: usize) -> Matrix3f {
+    let mut m = Matrix3f::new();
+    let mut source_row: usize = 0;
+    let mut source_column: usize = 0;
+    let mut target_row: usize = 0;
+    let mut target_column: usize = 0;
+
+    while target_row < 3 {
+      if source_row == row {
+        // Skip row to be removed
+        source_row += 1;
+      }
+      while target_column < 3 {
+        if source_column == column {
+          // Skip column to be removed
+          source_column += 1;
+        }
+        m[target_row][target_column] = self[source_row][source_column];
+
+        source_column += 1;
+        target_column += 1;
+      }
+      source_row += 1;
+      source_column = 0;
+      target_row += 1;
+      target_column = 0;
+    }
+
     return m;
   }
 }
@@ -443,6 +515,44 @@ mod tests {
     ]);
 
     let actual_result = m.transpose();
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn calculate_the_determinant_of_a_2x2_matrix() {
+    let m = Matrix2f::from([[1.0, 5.0], [-3.0, 2.0]]);
+
+    let expected_result = 17.0;
+
+    let actual_result = m.determinant();
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn a_submatrix_of_a_3x3_matrix_is_a_2x2_matrix() {
+    let m = Matrix3f::from([[1.0, 5.0, 0.0], [-3.0, 2.0, 7.0], [0.0, 6.0, 3.0]]);
+
+    let expected_result = Matrix2f::from([[-3.0, 2.0], [0.0, 6.0]]);
+
+    let actual_result = m.submatrix(0, 2);
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn a_submatrix_of_a_4x4_matrix_is_a_3x3_matrix() {
+    let m = Matrix4f::from([
+      [-6.0, 1.0, 1.0, 6.0],
+      [-8.0, 5.0, 8.0, 6.0],
+      [-1.0, 0.0, 8.0, 2.0],
+      [-7.0, 1.0, -1.0, 1.0],
+    ]);
+
+    let expected_result = Matrix3f::from([[-6.0, 1.0, 6.0], [-8.0, 8.0, 6.0], [-7.0, -1.0, 1.0]]);
+
+    let actual_result = m.submatrix(2, 1);
 
     assert_fuzzy_eq!(actual_result, expected_result);
   }

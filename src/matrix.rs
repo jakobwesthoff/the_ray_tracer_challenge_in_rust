@@ -9,6 +9,8 @@ type Matrix3fArray = [Matrix3fArrayRow; 3];
 type Matrix4fArrayRow = [f64; 4];
 type Matrix4fArray = [Matrix4fArrayRow; 4];
 
+// @TODO: Maybe refactor to utilize one Matrix struct in the future.
+//        Are const template parameters an option?
 #[derive(Debug)]
 pub struct Matrix2f {
   data: Matrix2fArray,

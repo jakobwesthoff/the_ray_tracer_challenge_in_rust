@@ -1,35 +1,51 @@
 extern crate the_ray_tracer_challenge as raytracer;
 
+use num_traits::Float;
 use std::fs::write;
 
 use raytracer::canvas::*;
 use raytracer::tuple::*;
 
 #[derive(Debug)]
-struct Environment {
-    gravity: Tuple,
-    wind: Tuple,
+struct Environment<T>
+where
+    T: Float,
+{
+    gravity: Tuple<T>,
+    wind: Tuple<T>,
 }
 
 #[derive(Debug)]
-struct Projectile {
-    position: Tuple,
-    velocity: Tuple,
+struct Projectile<T>
+where
+    T: Float,
+{
+    position: Tuple<T>,
+    velocity: Tuple<T>,
 }
 
-impl Projectile {
-    pub fn new(position: Tuple, velocity: Tuple) -> Self {
+impl<T> Projectile<T>
+where
+    T: Float,
+{
+    pub fn new(position: Tuple<T>, velocity: Tuple<T>) -> Self {
         Projectile { position, velocity }
     }
 }
 
-impl Environment {
-    pub fn new(gravity: Tuple, wind: Tuple) -> Self {
+impl<T> Environment<T>
+where
+    T: Float,
+{
+    pub fn new(gravity: Tuple<T>, wind: Tuple<T>) -> Self {
         Environment { gravity, wind }
     }
 }
 
-fn tick(environment: &Environment, projectile: &Projectile) -> Projectile {
+fn tick<T>(environment: &Environment<T>, projectile: &Projectile<T>) -> Projectile<T>
+where
+    T: Float,
+{
     Projectile::new(
         projectile.position + projectile.velocity,
         projectile.velocity + environment.gravity + environment.wind,
@@ -42,7 +58,10 @@ enum Pixel {
 }
 
 impl Pixel {
-    pub fn from_point_for_canvas(point: Tuple, canvas: &Canvas) -> Pixel {
+    pub fn from_point_for_canvas<T>(point: Tuple<T>, canvas: &Canvas) -> Pixel
+    where
+        T: Float,
+    {
         if !point.is_point() {
             panic!("Given tuple is not a point. Point needed for conversion to screen space.");
         }
@@ -52,8 +71,8 @@ impl Pixel {
         let rx = point.x.round();
         let ry = point.y.round();
 
-        let ux = rx as usize;
-        let uy = ry as usize;
+        let ux = rx.to_usize().unwrap();
+        let uy = ry.to_usize().unwrap();
 
         if rx.is_sign_negative() || ry.is_sign_negative() || ux > canvas.width || uy > canvas.height
         {

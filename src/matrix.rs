@@ -1,210 +1,134 @@
+use num_traits::Float;
 use std::convert::From;
 use std::ops::{Index, IndexMut, Mul};
 
 use crate::fuzzy_eq::*;
 use crate::tuple::*;
 
-type Matrix2fArrayRow = [f64; 2];
-type Matrix2fArray = [Matrix2fArrayRow; 2];
-type Matrix3fArrayRow = [f64; 3];
-type Matrix3fArray = [Matrix3fArrayRow; 3];
-type Matrix4fArrayRow = [f64; 4];
-type Matrix4fArray = [Matrix4fArrayRow; 4];
-
 // @TODO: Maybe refactor to utilize one Matrix struct in the future.
 //        Are const template parameters an option?
 #[derive(Debug, Copy, Clone)]
-pub struct Matrix2f {
-  data: Matrix2fArray,
+pub struct Matrix<T, const D: usize>
+where
+  T: Float,
+{
+  data: [[T; D]; D],
 }
 
-#[derive(Debug, Copy, Clone)]
-pub struct Matrix3f {
-  data: Matrix3fArray,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct Matrix4f {
-  data: Matrix4fArray,
-}
-
-impl From<Matrix2fArray> for Matrix2f {
-  fn from(data: Matrix2fArray) -> Self {
-    Matrix2f { data }
+impl<T, const D: usize> From<[[T; D]; D]> for Matrix<T, D>
+where
+  T: Float,
+{
+  fn from(data: [[T; D]; D]) -> Self {
+    Matrix { data }
   }
 }
 
-impl From<Matrix3fArray> for Matrix3f {
-  fn from(data: Matrix3fArray) -> Self {
-    Matrix3f { data }
-  }
-}
-
-impl From<Matrix4fArray> for Matrix4f {
-  fn from(data: Matrix4fArray) -> Self {
-    Matrix4f { data }
-  }
-}
-
-impl Matrix4f {
-  pub fn new() -> Matrix4f {
-    Matrix4f::from([
-      [0.0, 0.0, 0.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0],
-    ])
+impl<T, const D: usize> Matrix<T, D>
+where
+  T: Float,
+{
+  pub fn new() -> Matrix<T, D> {
+    Matrix::from([[T::zero(); D]; D])
   }
 
-  pub fn identity() -> Matrix4f {
-    Matrix4f::from([
-      [1.0, 0.0, 0.0, 0.0],
-      [0.0, 1.0, 0.0, 0.0],
-      [0.0, 0.0, 1.0, 0.0],
-      [0.0, 0.0, 0.0, 1.0],
-    ])
+  pub fn diagonal(value: T) -> Matrix<T, D> {
+    let mut m = Matrix::new();
+    for i in 0..D {
+      m[i][i] = value;
+    }
+    return m;
   }
-}
 
-impl Matrix3f {
-  pub fn new() -> Matrix3f {
-    Matrix3f::from([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+  pub fn identity() -> Matrix<T, D> {
+    Matrix::diagonal(T::one())
   }
-}
 
-impl Matrix2f {
-  pub fn new() -> Matrix2f {
-    Matrix2f::from([[0.0, 0.0], [0.0, 0.0]])
-  }
-}
-
-impl Index<usize> for Matrix2f {
-  type Output = Matrix2fArrayRow;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl Index<usize> for Matrix3f {
-  type Output = Matrix3fArrayRow;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl Index<usize> for Matrix4f {
-  type Output = Matrix4fArrayRow;
-
-  fn index(&self, index: usize) -> &Self::Output {
-    &self.data[index]
-  }
-}
-
-impl IndexMut<usize> for Matrix2f {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
-impl IndexMut<usize> for Matrix3f {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
-impl IndexMut<usize> for Matrix4f {
-  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
-    &mut self.data[index]
-  }
-}
-
-impl FuzzyEq<Matrix2f> for Matrix2f {
-  fn fuzzy_eq(&self, other: &Matrix2f) -> bool {
-    self[0][0].fuzzy_eq(&other[0][0])
-      && self[0][1].fuzzy_eq(&other[0][1])
-      && self[1][0].fuzzy_eq(&other[1][0])
-      && self[1][1].fuzzy_eq(&other[1][1])
-  }
-}
-
-impl FuzzyEq<Matrix3f> for Matrix3f {
-  fn fuzzy_eq(&self, other: &Matrix3f) -> bool {
-    self[0][0].fuzzy_eq(&other[0][0])
-      && self[0][1].fuzzy_eq(&other[0][1])
-      && self[0][2].fuzzy_eq(&other[0][2])
-      && self[1][0].fuzzy_eq(&other[1][0])
-      && self[1][1].fuzzy_eq(&other[1][1])
-      && self[1][2].fuzzy_eq(&other[1][2])
-      && self[2][0].fuzzy_eq(&other[2][0])
-      && self[2][1].fuzzy_eq(&other[2][1])
-      && self[2][2].fuzzy_eq(&other[2][2])
-  }
-}
-
-impl FuzzyEq<Matrix4f> for Matrix4f {
-  fn fuzzy_eq(&self, other: &Matrix4f) -> bool {
-    self[0][0].fuzzy_eq(&other[0][0])
-      && self[0][1].fuzzy_eq(&other[0][1])
-      && self[0][2].fuzzy_eq(&other[0][2])
-      && self[0][3].fuzzy_eq(&other[0][3])
-      && self[1][0].fuzzy_eq(&other[1][0])
-      && self[1][1].fuzzy_eq(&other[1][1])
-      && self[1][2].fuzzy_eq(&other[1][2])
-      && self[1][3].fuzzy_eq(&other[1][3])
-      && self[2][0].fuzzy_eq(&other[2][0])
-      && self[2][1].fuzzy_eq(&other[2][1])
-      && self[2][2].fuzzy_eq(&other[2][2])
-      && self[2][3].fuzzy_eq(&other[2][3])
-      && self[3][0].fuzzy_eq(&other[3][0])
-      && self[3][1].fuzzy_eq(&other[3][1])
-      && self[3][2].fuzzy_eq(&other[3][2])
-      && self[3][3].fuzzy_eq(&other[3][3])
-  }
-}
-
-impl Mul<Matrix4f> for Matrix4f {
-  type Output = Matrix4f;
-
-  fn mul(self, other: Matrix4f) -> Self::Output {
-    let mut m = Matrix4f::new();
-
-    for row in 0..4 {
-      for column in 0..4 {
-        m[row][column] = self[row][0] * other[0][column]
-          + self[row][1] * other[1][column]
-          + self[row][2] * other[2][column]
-          + self[row][3] * other[3][column];
+  pub fn transpose(&self) -> Matrix<T, D> {
+    let mut m = Matrix::new();
+    for row in 0..D {
+      for column in 0..D {
+        m[column][row] = self[row][column];
       }
     }
     return m;
   }
 }
 
-impl Mul<Tuple> for Matrix4f {
-  type Output = Tuple;
+impl<T, const D: usize> Index<usize> for Matrix<T, D>
+where
+  T: Float,
+{
+  type Output = [T; D];
 
-  fn mul(self, other: Tuple) -> Self::Output {
-    Tuple::new(
-      self[0][0] * other.x + self[0][1] * other.y + self[0][2] * other.z + self[0][3] * other.w,
-      self[1][0] * other.x + self[1][1] * other.y + self[1][2] * other.z + self[1][3] * other.w,
-      self[2][0] * other.x + self[2][1] * other.y + self[2][2] * other.z + self[2][3] * other.w,
-      self[3][0] * other.x + self[3][1] * other.y + self[3][2] * other.z + self[3][3] * other.w,
-    )
+  fn index(&self, index: usize) -> &Self::Output {
+    &self.data[index]
   }
 }
 
-impl Matrix2f {
-  pub fn determinant(&self) -> f64 {
+impl<T, const D: usize> IndexMut<usize> for Matrix<T, D>
+where
+  T: Float,
+{
+  fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+    &mut self.data[index]
+  }
+}
+
+impl<T, const D: usize> FuzzyEq<Self> for Matrix<T, D>
+where
+  T: Float,
+  T: FuzzyEq<T>,
+{
+  fn fuzzy_eq(&self, other: &Self) -> bool {
+    for row in 0..D {
+      for column in 0..D {
+        if self[row][column].fuzzy_ne(&other[row][column]) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+}
+
+impl<T, const D: usize> Mul<Matrix<T, D>> for Matrix<T, D>
+where
+  T: Float,
+{
+  type Output = Matrix<T, D>;
+
+  fn mul(self, other: Matrix<T, D>) -> Self::Output {
+    let mut m = Matrix::new();
+
+    for row in 0..D {
+      for column in 0..D {
+        for i in 0..D {
+          m[row][column] = m[row][column] + self[row][i] * other[i][column];
+        }
+      }
+    }
+    return m;
+  }
+}
+
+impl<T> Matrix<T, 2>
+where
+  T: Float,
+{
+  pub fn determinant(&self) -> T {
     self[0][0] * self[1][1] - self[0][1] * self[1][0]
   }
 }
 
-impl Matrix3f {
+impl<T> Matrix<T, 3>
+where
+  T: Float,
+{
   // @FIXME: Find a nicer way to do this.
-  pub fn submatrix(&self, row: usize, column: usize) -> Matrix2f {
-    let mut m = Matrix2f::new();
+  pub fn submatrix(&self, row: usize, column: usize) -> Matrix<T, 2> {
+    let mut m: Matrix<T, 2> = Matrix::new();
     let mut source_row: usize = 0;
     let mut source_column: usize = 0;
     let mut target_row: usize = 0;
@@ -234,11 +158,11 @@ impl Matrix3f {
     return m;
   }
 
-  pub fn minor(&self, row: usize, column: usize) -> f64 {
+  pub fn minor(&self, row: usize, column: usize) -> T {
     self.submatrix(row, column).determinant()
   }
 
-  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+  pub fn cofactor(&self, row: usize, column: usize) -> T {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
@@ -248,30 +172,37 @@ impl Matrix3f {
     }
   }
 
-  pub fn determinant(&self) -> f64 {
-    let mut determinant: f64 = 0.0;
+  pub fn determinant(&self) -> T {
+    let mut determinant: T = T::zero();
     for column in 0..3 {
-      determinant += self.cofactor(0, column) * self[0][column];
+      determinant = determinant + self.cofactor(0, column) * self[0][column];
     }
 
     determinant
   }
 }
 
-impl Matrix4f {
-  pub fn transpose(&self) -> Matrix4f {
-    let mut m = Matrix4f::new();
-    for row in 0..4 {
-      for column in 0..4 {
-        m[column][row] = self[row][column];
-      }
-    }
-    return m;
-  }
+// @TODO: Generalize once Tuple has been refactored to use Float trait
+impl Mul<Tuple> for Matrix<f64, 4> {
+  type Output = Tuple;
 
+  fn mul(self, other: Tuple) -> Self::Output {
+    Tuple::new(
+      self[0][0] * other.x + self[0][1] * other.y + self[0][2] * other.z + self[0][3] * other.w,
+      self[1][0] * other.x + self[1][1] * other.y + self[1][2] * other.z + self[1][3] * other.w,
+      self[2][0] * other.x + self[2][1] * other.y + self[2][2] * other.z + self[2][3] * other.w,
+      self[3][0] * other.x + self[3][1] * other.y + self[3][2] * other.z + self[3][3] * other.w,
+    )
+  }
+}
+
+impl<T> Matrix<T, 4>
+where
+  T: Float,
+{
   // @FIXME: Find a nicer way to do this.
-  pub fn submatrix(&self, row: usize, column: usize) -> Matrix3f {
-    let mut m = Matrix3f::new();
+  pub fn submatrix(&self, row: usize, column: usize) -> Matrix<T, 3> {
+    let mut m = Matrix::new();
     let mut source_row: usize = 0;
     let mut source_column: usize = 0;
     let mut target_row: usize = 0;
@@ -301,11 +232,11 @@ impl Matrix4f {
     return m;
   }
 
-  pub fn minor(&self, row: usize, column: usize) -> f64 {
+  pub fn minor(&self, row: usize, column: usize) -> T {
     self.submatrix(row, column).determinant()
   }
 
-  pub fn cofactor(&self, row: usize, column: usize) -> f64 {
+  pub fn cofactor(&self, row: usize, column: usize) -> T {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
@@ -315,25 +246,31 @@ impl Matrix4f {
     }
   }
 
-  pub fn determinant(&self) -> f64 {
-    let mut determinant: f64 = 0.0;
+  pub fn determinant(&self) -> T {
+    let mut determinant: T = T::zero();
     for column in 0..4 {
-      determinant += self.cofactor(0, column) * self[0][column];
+      determinant = determinant + self.cofactor(0, column) * self[0][column];
     }
 
     determinant
   }
 
-  pub fn is_invertible(&self) -> bool {
-    self.determinant().fuzzy_ne(&0.0)
+  pub fn is_invertible(&self) -> bool
+  where
+    T: FuzzyEq<T>,
+  {
+    self.determinant().fuzzy_ne(&T::zero())
   }
 
-  pub fn inverse(&self) -> Matrix4f {
+  pub fn inverse(&self) -> Matrix<T, 4>
+  where
+    T: FuzzyEq<T>,
+  {
     if !self.is_invertible() {
       panic!("Matrix is not invertible, but inverse was called!");
     }
 
-    let mut m = Matrix4f::new();
+    let mut m = Matrix::new();
     let determinant = self.determinant();
 
     for row in 0..4 {
@@ -354,7 +291,7 @@ mod tests {
 
   #[test]
   fn constructing_and_inspecting_a_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [1.0, 2.0, 3.0, 4.0],
       [5.5, 6.5, 7.5, 8.5],
       [9.0, 10.0, 11.0, 12.0],
@@ -381,7 +318,7 @@ mod tests {
 
   #[test]
   fn a_2x2_matrix_ought_to_be_representable() {
-    let m = Matrix2f::from([[-3.0, 5.0], [1.0, -2.0]]);
+    let m = Matrix::from([[-3.0, 5.0], [1.0, -2.0]]);
 
     assert_eq!(m[0][0], -3.0);
     assert_eq!(m[0][1], 5.0);
@@ -391,7 +328,7 @@ mod tests {
 
   #[test]
   fn a_3x3_matrix_ought_to_be_representable() {
-    let m = Matrix3f::from([[-3.0, 5.0, 0.0], [1.0, -2.0, -7.0], [0.0, 1.0, 1.0]]);
+    let m = Matrix::from([[-3.0, 5.0, 0.0], [1.0, -2.0, -7.0], [0.0, 1.0, 1.0]]);
 
     assert_eq!(m[0][0], -3.0);
     assert_eq!(m[0][1], 5.0);
@@ -406,29 +343,29 @@ mod tests {
 
   #[test]
   fn matrix_equality_with_identical_2x2_matrices() {
-    let m1 = Matrix2f::from([[0.123456789, 1.0], [2.0, 3.0]]);
-    let m2 = Matrix2f::from([[0.123456789, 1.0], [2.0, 3.0]]);
+    let m1 = Matrix::from([[0.123456789, 1.0], [2.0, 3.0]]);
+    let m2 = Matrix::from([[0.123456789, 1.0], [2.0, 3.0]]);
 
     assert_fuzzy_eq!(m1, m2);
   }
 
   #[test]
   fn matrix_equality_with_almost_identical_2x2_matrices() {
-    let m1 = Matrix2f::from([[0.123456789, 1.0], [2.0, 3.0]]);
-    let m2 = Matrix2f::from([[0.123456780, 1.0], [2.0, 3.0]]);
+    let m1 = Matrix::from([[0.123456789, 1.0], [2.0, 3.0]]);
+    let m2 = Matrix::from([[0.123456780, 1.0], [2.0, 3.0]]);
 
     assert_fuzzy_eq!(m1, m2);
   }
 
   #[test]
   fn matrix_equality_with_identical_3x3_matrices() {
-    let m1 = Matrix3f::from([
+    let m1 = Matrix::from([
       [0.123456789, 1.0, 2.0],
       [2.0, 3.0, 4.0],
       [5.0, 6.0, 7.7777777777777777],
     ]);
 
-    let m2 = Matrix3f::from([
+    let m2 = Matrix::from([
       [0.123456789, 1.0, 2.0],
       [2.0, 3.0, 4.0],
       [5.0, 6.0, 7.7777777777777777],
@@ -439,12 +376,12 @@ mod tests {
 
   #[test]
   fn matrix_equality_with_almost_identical_3x3_matrices() {
-    let m1 = Matrix3f::from([
+    let m1 = Matrix::from([
       [0.123456789, 1.0, 2.0],
       [2.0, 3.0, 4.0],
       [5.0, 6.0, 7.7777777777777777],
     ]);
-    let m2 = Matrix3f::from([
+    let m2 = Matrix::from([
       [0.123456780, 1.0, 2.0],
       [2.0, 3.0, 4.0],
       [5.0, 6.0, 7.7777777777777],
@@ -455,13 +392,13 @@ mod tests {
 
   #[test]
   fn matrix_equality_with_identical_4x4_matrices() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777777, 23.5],
       [0.0, 0.0, 0.0, 1.0],
     ]);
-    let m2 = Matrix4f::from([
+    let m2 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777777, 23.5],
@@ -473,13 +410,13 @@ mod tests {
 
   #[test]
   fn matrix_equality_with_almost_identical_4x4_matrices() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777777, 23.5],
       [0.0, 0.0, 0.0, 1.0000000000001],
     ]);
-    let m2 = Matrix4f::from([
+    let m2 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777, 23.5],
@@ -491,13 +428,13 @@ mod tests {
 
   #[test]
   fn matrix_inequality_with_non_identical_4x4_matrices() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777777, 23.5],
       [0.0, 0.0, 0.0, 1.0],
     ]);
-    let m2 = Matrix4f::from([
+    let m2 = Matrix::from([
       [0.123456789, 1.0, 2.0, 42.0],
       [2.0, 3.0, 4.0, -42.0],
       [5.0, 6.0, 7.7777777777777777, 23.5],
@@ -509,20 +446,20 @@ mod tests {
 
   #[test]
   fn multiplying_two_4x4_matrices() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [1.0, 2.0, 3.0, 4.0],
       [5.0, 6.0, 7.0, 8.0],
       [9.0, 8.0, 7.0, 6.0],
       [5.0, 4.0, 3.0, 2.0],
     ]);
-    let m2 = Matrix4f::from([
+    let m2 = Matrix::from([
       [-2.0, 1.0, 2.0, 3.0],
       [3.0, 2.0, 1.0, -1.0],
       [4.0, 3.0, 6.0, 5.0],
       [1.0, 2.0, 7.0, 8.0],
     ]);
 
-    let expected_result = Matrix4f::from([
+    let expected_result = Matrix::from([
       [20.0, 22.0, 50.0, 48.0],
       [44.0, 54.0, 114.0, 108.0],
       [40.0, 58.0, 110.0, 102.0],
@@ -536,7 +473,7 @@ mod tests {
 
   #[test]
   fn a_4x4_matrix_multiplied_by_a_point() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [1.0, 2.0, 3.0, 4.0],
       [2.0, 4.0, 4.0, 2.0],
       [8.0, 6.0, 4.0, 1.0],
@@ -553,13 +490,13 @@ mod tests {
 
   #[test]
   fn multiplying_a_4x4_matrix_by_the_identity_matrix() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [0.0, 1.0, 2.0, 4.0],
       [1.0, 2.0, 4.0, 8.0],
       [2.0, 4.0, 8.0, 16.0],
       [4.0, 8.0, 16.0, 32.0],
     ]);
-    let m2 = Matrix4f::identity();
+    let m2 = Matrix::identity();
 
     let expected_result = m1;
     let actual_result = m1 * m2;
@@ -569,14 +506,14 @@ mod tests {
 
   #[test]
   fn transposing_a_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [0.0, 9.0, 3.0, 0.0],
       [9.0, 8.0, 0.0, 8.0],
       [1.0, 8.0, 5.0, 3.0],
       [0.0, 0.0, 5.0, 8.0],
     ]);
 
-    let expected_result = Matrix4f::from([
+    let expected_result = Matrix::from([
       [0.0, 9.0, 1.0, 0.0],
       [9.0, 8.0, 8.0, 0.0],
       [3.0, 0.0, 5.0, 5.0],
@@ -590,7 +527,7 @@ mod tests {
 
   #[test]
   fn calculate_the_determinant_of_a_2x2_matrix() {
-    let m = Matrix2f::from([[1.0, 5.0], [-3.0, 2.0]]);
+    let m = Matrix::from([[1.0, 5.0], [-3.0, 2.0]]);
 
     let expected_result = 17.0;
 
@@ -601,9 +538,9 @@ mod tests {
 
   #[test]
   fn a_submatrix_of_a_3x3_matrix_is_a_2x2_matrix() {
-    let m = Matrix3f::from([[1.0, 5.0, 0.0], [-3.0, 2.0, 7.0], [0.0, 6.0, 3.0]]);
+    let m = Matrix::from([[1.0, 5.0, 0.0], [-3.0, 2.0, 7.0], [0.0, 6.0, 3.0]]);
 
-    let expected_result = Matrix2f::from([[-3.0, 2.0], [0.0, 6.0]]);
+    let expected_result = Matrix::from([[-3.0, 2.0], [0.0, 6.0]]);
 
     let actual_result = m.submatrix(0, 2);
 
@@ -612,14 +549,14 @@ mod tests {
 
   #[test]
   fn a_submatrix_of_a_4x4_matrix_is_a_3x3_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [-6.0, 1.0, 1.0, 6.0],
       [-8.0, 5.0, 8.0, 6.0],
       [-1.0, 0.0, 8.0, 2.0],
       [-7.0, 1.0, -1.0, 1.0],
     ]);
 
-    let expected_result = Matrix3f::from([[-6.0, 1.0, 6.0], [-8.0, 8.0, 6.0], [-7.0, -1.0, 1.0]]);
+    let expected_result = Matrix::from([[-6.0, 1.0, 6.0], [-8.0, 8.0, 6.0], [-7.0, -1.0, 1.0]]);
 
     let actual_result = m.submatrix(2, 1);
 
@@ -628,7 +565,7 @@ mod tests {
 
   #[test]
   fn calculate_the_minor_of_a_3x3_matrix() {
-    let m = Matrix3f::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
+    let m = Matrix::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
 
     let sub = m.submatrix(1, 0);
     let determinant = sub.determinant();
@@ -640,7 +577,7 @@ mod tests {
 
   #[test]
   fn calculating_a_cofactor_of_a_3x3_matrix() {
-    let m = Matrix3f::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
+    let m = Matrix::from([[3.0, 5.0, 0.0], [2.0, -1.0, -7.0], [6.0, -1.0, 5.0]]);
 
     let minor1 = m.minor(0, 0);
     let minor2 = m.minor(1, 0);
@@ -656,7 +593,7 @@ mod tests {
 
   #[test]
   fn calculate_the_determinant_of_a_3x3_matrix() {
-    let m = Matrix3f::from([[1.0, 2.0, 6.0], [-5.0, 8.0, -4.0], [2.0, 6.0, 4.0]]);
+    let m = Matrix::from([[1.0, 2.0, 6.0], [-5.0, 8.0, -4.0], [2.0, 6.0, 4.0]]);
 
     let cofactor00 = m.cofactor(0, 0);
     let cofactor01 = m.cofactor(0, 1);
@@ -673,7 +610,7 @@ mod tests {
 
   #[test]
   fn calculating_the_determinant_of_a_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [-2.0, -8.0, 3.0, 5.0],
       [-3.0, 1.0, 7.0, 3.0],
       [1.0, 2.0, -9.0, 6.0],
@@ -697,7 +634,7 @@ mod tests {
 
   #[test]
   fn testing_an_invertible_matrix_for_invertibility() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [6.0, 4.0, 4.0, 4.0],
       [5.0, 5.0, 7.0, 6.0],
       [4.0, -9.0, 3.0, -7.0],
@@ -712,7 +649,7 @@ mod tests {
 
   #[test]
   fn testing_an_noninvertible_matrix_for_invertibility() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [-4.0, 2.0, -2.0, -3.0],
       [9.0, 6.0, 2.0, 6.0],
       [0.0, -5.0, 1.0, -5.0],
@@ -727,7 +664,7 @@ mod tests {
 
   #[test]
   fn calculating_the_inverse_of_a_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [-5.0, 2.0, 6.0, -8.0],
       [1.0, -5.0, 1.0, 8.0],
       [7.0, 7.0, -6.0, -7.0],
@@ -738,7 +675,7 @@ mod tests {
     let cofactor23 = m.cofactor(2, 3);
     let cofactor32 = m.cofactor(3, 2);
 
-    let expected_result = Matrix4f::from([
+    let expected_result = Matrix::from([
       [0.21805, 0.45113, 0.24060, -0.04511],
       [-0.80827, -1.45677, -0.44361, 0.52068],
       [-0.07895, -0.22368, -0.05263, 0.19737],
@@ -757,14 +694,14 @@ mod tests {
 
   #[test]
   fn calculating_the_inverse_of_another_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [8.0, -5.0, 9.0, 2.0],
       [7.0, 5.0, 6.0, 1.0],
       [-6.0, 0.0, 9.0, 6.0],
       [-3.0, 0.0, -9.0, -4.0],
     ]);
 
-    let expected_result = Matrix4f::from([
+    let expected_result = Matrix::from([
       [-0.15385, -0.15385, -0.28205, -0.53846],
       [-0.07692, 0.12308, 0.02564, 0.03077],
       [0.35897, 0.35897, 0.43590, 0.92308],
@@ -778,14 +715,14 @@ mod tests {
 
   #[test]
   fn calculating_the_inverse_of_a_third_4x4_matrix() {
-    let m = Matrix4f::from([
+    let m = Matrix::from([
       [9.0, 3.0, 0.0, 9.0],
       [-5.0, -2.0, -6.0, -3.0],
       [-4.0, 9.0, 6.0, 4.0],
       [-7.0, 6.0, 6.0, 2.0],
     ]);
 
-    let expected_result = Matrix4f::from([
+    let expected_result = Matrix::from([
       [-0.04074, -0.07778, 0.14444, -0.22222],
       [-0.07778, 0.03333, 0.36667, -0.33333],
       [-0.02901, -0.14630, -0.10926, 0.12963],
@@ -799,14 +736,14 @@ mod tests {
 
   #[test]
   fn multiplying_a_product_by_its_inverse() {
-    let m1 = Matrix4f::from([
+    let m1 = Matrix::from([
       [3.0, -9.0, 7.0, 3.0],
       [3.0, -8.0, 2.0, -9.0],
       [-4.0, 4.0, 4.0, 1.0],
       [-6.0, 5.0, -1.0, 1.0],
     ]);
 
-    let m2 = Matrix4f::from([
+    let m2 = Matrix::from([
       [8.0, 2.0, 2.0, 2.0],
       [3.0, -1.0, 7.0, 0.0],
       [7.0, 0.0, 5.0, 4.0],

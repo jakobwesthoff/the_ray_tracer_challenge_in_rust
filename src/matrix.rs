@@ -999,4 +999,32 @@ mod tests {
 
     assert_fuzzy_eq!(transform * p, Tuple::point(2.0, 3.0, 7.0));
   }
+
+  #[test]
+  fn individual_transformation_are_applied_in_sequence() {
+    let p = Tuple::point(1.0, 0.0, 1.0);
+    let a = Matrix::rotation_x(PI / 2.0);
+    let b = Matrix::scaling(5.0, 5.0, 5.0);
+    let c = Matrix::translation(10.0, 5.0, 7.0);
+
+    let p2 = a * p;
+    assert_fuzzy_eq!(p2, Tuple::point(1.0, -1.0, 0.0));
+
+    let p3 = b * p2;
+    assert_fuzzy_eq!(p3, Tuple::point(5.0, -5.0, 0.0));
+
+    let p4 = c * p3;
+    assert_fuzzy_eq!(p4, Tuple::point(15.0, 0.0, 7.0));
+  }
+
+  #[test]
+  fn chained_transformations_must_be_applied_in_reverse_order() {
+    let p = Tuple::point(1.0, 0.0, 1.0);
+    let a = Matrix::rotation_x(PI / 2.0);
+    let b = Matrix::scaling(5.0, 5.0, 5.0);
+    let c = Matrix::translation(10.0, 5.0, 7.0);
+
+    let transform = c * b * a;
+    assert_fuzzy_eq!(transform * p, Tuple::point(15.0, 0.0, 7.0));
+  }
 }

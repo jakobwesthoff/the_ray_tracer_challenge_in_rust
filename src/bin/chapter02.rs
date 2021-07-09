@@ -4,6 +4,7 @@ use num_traits::Float;
 use std::fs::write;
 
 use raytracer::canvas::*;
+use raytracer::canvas::to_ppm::*;
 use raytracer::tuple::*;
 
 #[derive(Debug)]

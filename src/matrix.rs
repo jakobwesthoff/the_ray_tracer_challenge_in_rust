@@ -286,6 +286,15 @@ where
 
     return m;
   }
+
+  pub fn translation(x: T, y: T, z: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [T::one(), T::zero(), T::zero(), x],
+      [T::zero(), T::one(), T::zero(), y],
+      [T::zero(), T::zero(), T::one(), z],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
 }
 
 #[cfg(test)]
@@ -758,5 +767,36 @@ mod tests {
     let actual_result = m3 * m2.inverse();
 
     assert_fuzzy_eq!(actual_result, m1);
+  }
+
+  #[test]
+  fn multiplying_by_a_translation_matrix() {
+    let transform = Matrix::translation(5.0, -3.0, 2.0);
+    let p = Tuple::point(-3.0, 4.0, 5.0);
+    let expected_result = Tuple::point(2.0, 1.0, 7.0);
+
+    let actual_result = transform * p;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn multiplying_by_the_inverse_of_a_translation_matrix() {
+    let transform = Matrix::translation(5.0, -3.0, 2.0);
+    let inverse_transform = transform.inverse();
+    let p = Tuple::point(-3.0, 4.0, 5.0);
+    let expected_result = Tuple::point(-8.0, 7.0, 3.0);
+
+    let actual_result = inverse_transform * p;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn translation_does_not_affect_vectors() {
+    let transform = Matrix::translation(5.0, -3.0, 2.0);
+    let v = Tuple::vector(-3.0, 4.0, 5.0);
+    let expected_result = v;
+
+    let actual_result = transform * v;
+    assert_fuzzy_eq!(actual_result, expected_result);
   }
 }

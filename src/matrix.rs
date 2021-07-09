@@ -295,6 +295,15 @@ where
       [T::zero(), T::zero(), T::zero(), T::one()],
     ])
   }
+
+  pub fn scaling(x: T, y: T, z: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [x, T::zero(), T::zero(), T::zero()],
+      [T::zero(), y, T::zero(), T::zero()],
+      [T::zero(), T::zero(), z, T::zero()],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
 }
 
 #[cfg(test)]
@@ -799,4 +808,46 @@ mod tests {
     let actual_result = transform * v;
     assert_fuzzy_eq!(actual_result, expected_result);
   }
+
+  #[test]
+  fn a_scaling_matrix_applied_to_a_point() {
+    let transform = Matrix::scaling(2.0, 3.0, 4.0);
+    let p = Tuple::point(-4.0, 6.0, 8.0);
+    let expected_result = Tuple::point(-8.0, 18.0, 32.0);
+
+    let actual_result = transform * p;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn a_scaling_matrix_applied_to_a_vector() {
+    let transform = Matrix::scaling(2.0, 3.0, 4.0);
+    let v = Tuple::vector(-4.0, 6.0, 8.0);
+    let expected_result = Tuple::vector(-8.0, 18.0, 32.0);
+
+    let actual_result = transform * v;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn multiplying_by_the_inverse_of_a_scaling_matrix() {
+    let transform = Matrix::scaling(2.0, 3.0, 4.0);
+    let inverse_transform = transform.inverse();
+    let v = Tuple::vector(-4.0, 6.0, 8.0);
+    let expected_result = Tuple::vector(-2.0, 2.0, 2.0);
+
+    let actual_result = inverse_transform * v;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn reflection_is_scaling_by_a_negative_value() {
+    let transform = Matrix::scaling(-1.0, 1.0, 1.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+    let expected_result = Tuple::point(-2.0, 3.0, 4.0);
+
+    let actual_result = transform * p;
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
 }

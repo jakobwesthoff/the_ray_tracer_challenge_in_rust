@@ -287,20 +287,52 @@ where
     return m;
   }
 
+  #[rustfmt::skip]
   pub fn translation(x: T, y: T, z: T) -> Matrix<T, 4> {
     Matrix::from([
-      [T::one(), T::zero(), T::zero(), x],
-      [T::zero(), T::one(), T::zero(), y],
-      [T::zero(), T::zero(), T::one(), z],
+      [T::one(),  T::zero(), T::zero(), x],
+      [T::zero(), T::one(),  T::zero(), y],
+      [T::zero(), T::zero(), T::one(),  z],
       [T::zero(), T::zero(), T::zero(), T::one()],
     ])
   }
 
+  #[rustfmt::skip]
   pub fn scaling(x: T, y: T, z: T) -> Matrix<T, 4> {
     Matrix::from([
-      [x, T::zero(), T::zero(), T::zero()],
-      [T::zero(), y, T::zero(), T::zero()],
-      [T::zero(), T::zero(), z, T::zero()],
+      [x,         T::zero(), T::zero(), T::zero()],
+      [T::zero(), y,         T::zero(), T::zero()],
+      [T::zero(), T::zero(), z,         T::zero()],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
+
+  #[rustfmt::skip]
+  pub fn rotation_x(r: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [T::one(),  T::zero(), T::zero(), T::zero()],
+      [T::zero(), r.cos(),   -r.sin(),  T::zero()],
+      [T::zero(), r.sin(),   r.cos(),   T::zero()],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
+
+  #[rustfmt::skip]
+  pub fn rotation_y(r: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [r.cos(),   T::zero(), r.sin(),   T::zero()],
+      [T::zero(), T::one(),  T::zero(), T::zero()],
+      [-r.sin(),  T::zero(), r.cos(),   T::zero()],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
+
+  #[rustfmt::skip]
+  pub fn rotation_z(r: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [r.cos(),   -r.sin(),  T::zero(), T::zero()],
+      [r.sin(),   r.cos(),   T::zero(), T::zero()],
+      [T::zero(), T::zero(), T::one(),  T::zero()],
       [T::zero(), T::zero(), T::zero(), T::one()],
     ])
   }
@@ -309,6 +341,7 @@ where
 #[cfg(test)]
 mod tests {
   use super::*;
+  use std::f64::consts::PI;
 
   #[test]
   fn constructing_and_inspecting_a_4x4_matrix() {
@@ -848,6 +881,65 @@ mod tests {
 
     let actual_result = transform * p;
     assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn rotating_a_point_around_the_x_axis() {
+    let half_quarter = Matrix::rotation_x(PI / 4.0);
+    let full_quarter = Matrix::rotation_x(PI / 2.0);
+    let p = Tuple::point(0.0, 1.0, 0.0);
+
+    assert_fuzzy_eq!(
+      half_quarter * p,
+      Tuple::point(0.0, (2.0).sqrt() / 2.0, (2.0).sqrt() / 2.0)
+    );
+
+    assert_fuzzy_eq!(full_quarter * p, Tuple::point(0.0, 0.0, 1.0));
+  }
+
+  #[test]
+  fn the_inverse_of_an_x_rotation_rotates_in_the_opposite_direction() {
+    let half_quarter = Matrix::rotation_x(PI / 4.0);
+    let full_quarter = Matrix::rotation_x(PI / 2.0);
+    let inverse_half_quarter = half_quarter.inverse();
+    let inverse_full_quarter = full_quarter.inverse();
+
+    let p = Tuple::point(0.0, 1.0, 0.0);
+
+    assert_fuzzy_eq!(
+      inverse_half_quarter * p,
+      Tuple::point(0.0, (2.0).sqrt() / 2.0, -(2.0).sqrt() / 2.0)
+    );
+
+    assert_fuzzy_eq!(inverse_full_quarter * p, Tuple::point(0.0, 0.0, -1.0));
+  }
+
+  #[test]
+  fn rotating_a_point_around_the_y_axis() {
+    let half_quarter = Matrix::rotation_y(PI / 4.0);
+    let full_quarter = Matrix::rotation_y(PI / 2.0);
+    let p = Tuple::point(0.0, 0.0, 1.0);
+
+    assert_fuzzy_eq!(
+      half_quarter * p,
+      Tuple::point((2.0).sqrt() / 2.0, 0.0, (2.0).sqrt() / 2.0)
+    );
+
+    assert_fuzzy_eq!(full_quarter * p, Tuple::point(1.0, 0.0, 0.0));
+  }
+
+  #[test]
+  fn rotating_a_point_around_the_z_axis() {
+    let half_quarter = Matrix::rotation_z(PI / 4.0);
+    let full_quarter = Matrix::rotation_z(PI / 2.0);
+    let p = Tuple::point(0.0, 1.0, 0.0);
+
+    assert_fuzzy_eq!(
+      half_quarter * p,
+      Tuple::point(-(2.0).sqrt() / 2.0, (2.0).sqrt() / 2.0, 0.0)
+    );
+
+    assert_fuzzy_eq!(full_quarter * p, Tuple::point(-1.0, 0.0, 0.0));
   }
 
 }

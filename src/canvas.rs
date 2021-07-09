@@ -1,9 +1,18 @@
+pub mod to_rgba32;
+pub mod to_ppm;
+pub mod to_png;
+
 use num_traits::Float;
 use num_traits::Num;
 use std::ops::{Add, Mul, Sub};
 use std::vec::Vec;
 
 use super::fuzzy_eq::*;
+
+pub trait Sized {
+  fn width(&self) -> usize;
+  fn height(&self) -> usize;
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct Color<T = f64>
@@ -112,6 +121,15 @@ where
   pixels: Vec<Color<T>>,
 }
 
+impl<T: Float> Sized for Canvas<T> {
+  fn width(&self) -> usize {
+    self.width
+  }
+  fn height(&self) -> usize {
+    self.height
+  }
+}
+
 impl<T: Float> Canvas<T> {
   pub fn new(width: usize, height: usize) -> Self {
     Self {
@@ -133,104 +151,13 @@ impl<T: Float> Canvas<T> {
   fn get_pixel_index(&self, x: usize, y: usize) -> usize {
     y * self.width + x
   }
-
-  fn create_ppm_header(&self) -> Vec<u8> {
-    let mut header = Vec::new();
-    header.extend(String::from("P3\n").into_bytes());
-    header.extend(format!("{} {}\n", self.width, self.height).into_bytes());
-    header.extend(format!("{}\n", 255).into_bytes());
-
-    return header;
-  }
-
-  fn create_ppm_pixel_data(&self) -> Vec<u8> {
-    let mut pixel_strings: Vec<String> = Vec::new();
-    for pixel in self.pixels.iter() {
-      let clamped_color = pixel.clamp(T::zero(), T::one());
-      let r: u8 = (clamped_color.red * T::from(255.0).unwrap())
-        .round()
-        .to_u8()
-        .unwrap();
-      let g: u8 = (clamped_color.green * T::from(255.0).unwrap())
-        .round()
-        .to_u8()
-        .unwrap();
-      let b: u8 = (clamped_color.blue * T::from(255.0).unwrap())
-        .round()
-        .to_u8()
-        .unwrap();
-
-      pixel_strings.push(format!("{}", r));
-      pixel_strings.push(format!("{}", g));
-      pixel_strings.push(format!("{}", b));
-    }
-
-    let mut pixel_data: Vec<u8> = Vec::new();
-
-    let mut column_count: usize = 0;
-    let mut last_image_row: usize = 0;
-
-    for (i, pixel_string) in pixel_strings.iter().enumerate() {
-      // Line break for each row
-      let current_image_row = i / (self.width * 3);
-      if current_image_row != last_image_row {
-        last_image_row = current_image_row;
-        pixel_data.extend(String::from("\n").into_bytes());
-        column_count = 0;
-      }
-
-      let mut needed_space: usize = 0;
-
-      if column_count != 0 {
-        needed_space += 1; // space
-      }
-      needed_space += pixel_string.len();
-
-      // Do not exceed 70 characters per line
-      if column_count + needed_space > 70 {
-        pixel_data.extend(String::from("\n").into_bytes());
-        column_count = 0;
-      }
-
-      if column_count != 0 {
-        pixel_data.extend(String::from(" ").into_bytes());
-        column_count += 1;
-      }
-
-      pixel_data.extend(pixel_string.clone().into_bytes());
-      column_count += pixel_string.len();
-    }
-
-    // Insert newline at the end of data
-    pixel_data.extend(String::from("\n").into_bytes());
-
-    return pixel_data;
-  }
-}
-
-pub trait ToPPM {
-  fn to_ppm(&self) -> Vec<u8>;
-}
-
-impl<T> ToPPM for Canvas<T>
-where
-  T: Float,
-{
-  fn to_ppm(&self) -> Vec<u8> {
-    let header = self.create_ppm_header();
-    let pixel_data = self.create_ppm_pixel_data();
-
-    let mut ppm = Vec::new();
-    ppm.extend(header);
-    ppm.extend(pixel_data);
-
-    return ppm;
-  }
 }
 
 #[cfg(test)]
 mod tests {
   use super::*;
+  use super::to_ppm::ToPPM;
+
 
   #[test]
   fn colors_are_red_green_blue_tuples() {

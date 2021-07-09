@@ -1,25 +1,30 @@
+use num_traits::Float;
+use num_traits::Num;
 use std::ops::{Add, Mul, Sub};
 use std::vec::Vec;
 
 use super::fuzzy_eq::*;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Color {
-  pub red: f64,
-  pub green: f64,
-  pub blue: f64,
+pub struct Color<T = f64>
+where
+  T: Float,
+{
+  pub red: T,
+  pub green: T,
+  pub blue: T,
 }
 
-impl Color {
-  pub fn new(red: f64, green: f64, blue: f64) -> Self {
+impl<T: Float> Color<T> {
+  pub fn new(red: T, green: T, blue: T) -> Self {
     Color { red, green, blue }
   }
 
   pub fn black() -> Self {
-    Color::new(0.0, 0.0, 0.0)
+    Color::new(T::zero(), T::zero(), T::zero())
   }
 
-  pub fn clamp(&self, lower_bound: f64, upper_bound: f64) -> Color {
+  pub fn clamp(&self, lower_bound: T, upper_bound: T) -> Color<T> {
     Color::new(
       self.red.min(upper_bound).max(lower_bound),
       self.green.min(upper_bound).max(lower_bound),
@@ -28,10 +33,10 @@ impl Color {
   }
 }
 
-impl Add for Color {
-  type Output = Color;
+impl<T: Float> Add for Color<T> {
+  type Output = Color<T>;
 
-  fn add(self, other: Color) -> Self::Output {
+  fn add(self, other: Color<T>) -> Self::Output {
     Color::new(
       self.red + other.red,
       self.green + other.green,
@@ -40,10 +45,10 @@ impl Add for Color {
   }
 }
 
-impl Sub for Color {
-  type Output = Color;
+impl<T: Float> Sub for Color<T> {
+  type Output = Color<T>;
 
-  fn sub(self, other: Color) -> Self::Output {
+  fn sub(self, other: Color<T>) -> Self::Output {
     Color::new(
       self.red - other.red,
       self.green - other.green,
@@ -52,27 +57,44 @@ impl Sub for Color {
   }
 }
 
-impl Mul<f64> for Color {
-  type Output = Color;
+impl<T, U> Mul<U> for Color<T>
+where
+  T: Float,
+  T: From<U>,
+  U: Num,
+{
+  type Output = Color<T>;
 
-  fn mul(self, other: f64) -> Self::Output {
-    Color::new(self.red * other, self.green * other, self.blue * other)
-  }
-}
-
-impl Mul<Color> for Color {
-  type Output = Color;
-
-  fn mul(self, other: Color) -> Self::Output {
+  fn mul(self, other: U) -> Self::Output {
+    let multiplicator: T = other.into();
     Color::new(
-      self.red * other.red,
-      self.green * other.green,
-      self.blue * other.blue,
+      self.red * multiplicator,
+      self.green * multiplicator,
+      self.blue * multiplicator,
     )
   }
 }
 
-impl FuzzyEq<Color> for Color {
+impl<T> Mul<Color<T>> for Color<T>
+where
+  T: Float,
+{
+  type Output = Color<T>;
+
+  fn mul(self, other: Color<T>) -> Self::Output {
+    Color::new(
+      self.red * other.red.into(),
+      self.green * other.green.into(),
+      self.blue * other.blue.into(),
+    )
+  }
+}
+
+impl<T> FuzzyEq<Color<T>> for Color<T>
+where
+  T: Float,
+  T: FuzzyEq<T>,
+{
   fn fuzzy_eq(&self, other: &Self) -> bool {
     self.red.fuzzy_eq(&other.red)
       && self.green.fuzzy_eq(&other.green)
@@ -80,14 +102,17 @@ impl FuzzyEq<Color> for Color {
   }
 }
 
-pub struct Canvas {
+pub struct Canvas<T = f64>
+where
+  T: Float,
+{
   pub width: usize,
   pub height: usize,
 
-  pixels: Vec<Color>,
+  pixels: Vec<Color<T>>,
 }
 
-impl Canvas {
+impl<T: Float> Canvas<T> {
   pub fn new(width: usize, height: usize) -> Self {
     Self {
       width,
@@ -96,11 +121,11 @@ impl Canvas {
     }
   }
 
-  pub fn pixel_at(&self, x: usize, y: usize) -> Color {
+  pub fn pixel_at(&self, x: usize, y: usize) -> Color<T> {
     self.pixels[self.get_pixel_index(x, y)]
   }
 
-  pub fn write_pixel(&mut self, x: usize, y: usize, color: Color) {
+  pub fn write_pixel(&mut self, x: usize, y: usize, color: Color<T>) {
     let index = self.get_pixel_index(x, y);
     self.pixels[index] = color;
   }
@@ -121,10 +146,19 @@ impl Canvas {
   fn create_ppm_pixel_data(&self) -> Vec<u8> {
     let mut pixel_strings: Vec<String> = Vec::new();
     for pixel in self.pixels.iter() {
-      let clamped_color = pixel.clamp(0.0, 1.0);
-      let r: u8 = (clamped_color.red * 255.0).round() as u8;
-      let g: u8 = (clamped_color.green * 255.0).round() as u8;
-      let b: u8 = (clamped_color.blue * 255.0).round() as u8;
+      let clamped_color = pixel.clamp(T::zero(), T::one());
+      let r: u8 = (clamped_color.red * T::from(255.0).unwrap())
+        .round()
+        .to_u8()
+        .unwrap();
+      let g: u8 = (clamped_color.green * T::from(255.0).unwrap())
+        .round()
+        .to_u8()
+        .unwrap();
+      let b: u8 = (clamped_color.blue * T::from(255.0).unwrap())
+        .round()
+        .to_u8()
+        .unwrap();
 
       pixel_strings.push(format!("{}", r));
       pixel_strings.push(format!("{}", g));
@@ -178,7 +212,10 @@ pub trait ToPPM {
   fn to_ppm(&self) -> Vec<u8>;
 }
 
-impl ToPPM for Canvas {
+impl<T> ToPPM for Canvas<T>
+where
+  T: Float,
+{
   fn to_ppm(&self) -> Vec<u8> {
     let header = self.create_ppm_header();
     let pixel_data = self.create_ppm_pixel_data();
@@ -260,7 +297,7 @@ mod tests {
 
   #[test]
   fn creating_a_canvas() {
-    let c = Canvas::new(10, 20);
+    let c: Canvas = Canvas::new(10, 20);
 
     assert_eq!(10, c.width);
     assert_eq!(20, c.height);
@@ -286,7 +323,7 @@ mod tests {
 
   #[test]
   fn constructing_the_ppm_header() {
-    let c = Canvas::new(5, 3);
+    let c: Canvas = Canvas::new(5, 3);
     let ppm_image = c.to_ppm();
     let actual_result = &ppm_image[..11];
     /*

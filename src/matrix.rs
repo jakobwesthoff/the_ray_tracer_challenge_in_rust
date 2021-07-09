@@ -336,6 +336,16 @@ where
       [T::zero(), T::zero(), T::zero(), T::one()],
     ])
   }
+
+  #[rustfmt::skip]
+  pub fn shearing(xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -> Matrix<T, 4> {
+    Matrix::from([
+      [T::one(),  xy,        xz,        T::zero()],
+      [yx,        T::one(),  yz,        T::zero()],
+      [zx,        zy,        T::one(),  T::zero()],
+      [T::zero(), T::zero(), T::zero(), T::one()],
+    ])
+  }
 }
 
 #[cfg(test)]
@@ -942,4 +952,51 @@ mod tests {
     assert_fuzzy_eq!(full_quarter * p, Tuple::point(-1.0, 0.0, 0.0));
   }
 
+  #[test]
+  fn a_shearing_transformation_moves_x_in_proportion_to_y() {
+    let transform = Matrix::shearing(1.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(5.0, 3.0, 4.0));
+  }
+
+  #[test]
+  fn a_shearing_transformation_moves_x_in_proportion_to_z() {
+    let transform = Matrix::shearing(0.0, 1.0, 0.0, 0.0, 0.0, 0.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(6.0, 3.0, 4.0));
+  }
+
+  #[test]
+  fn a_shearing_transformation_moves_y_in_proportion_to_x() {
+    let transform = Matrix::shearing(0.0, 0.0, 1.0, 0.0, 0.0, 0.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(2.0, 5.0, 4.0));
+  }
+
+  #[test]
+  fn a_shearing_transformation_moves_y_in_proportion_to_z() {
+    let transform = Matrix::shearing(0.0, 0.0, 0.0, 1.0, 0.0, 0.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(2.0, 7.0, 4.0));
+  }
+
+  #[test]
+  fn a_shearing_transformation_moves_z_in_proportion_to_x() {
+    let transform = Matrix::shearing(0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(2.0, 3.0, 6.0));
+  }
+
+  #[test]
+  fn a_shearing_transformation_moves_z_in_proportion_to_y() {
+    let transform = Matrix::shearing(0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+    let p = Tuple::point(2.0, 3.0, 4.0);
+
+    assert_fuzzy_eq!(transform * p, Tuple::point(2.0, 3.0, 7.0));
+  }
 }

@@ -9,11 +9,12 @@ learn for quite some time, but never got the time or the right project for.
 I have never written anything in Rust before, so please bear with me, if the
 code isn't perfect.
 
-I furthermore decided to create a YouTube series of me learning Rust and having
-some fun, while implementing chapter by chapter of the book. You are welcome to
-join me and follow allow while I am working on this week for week.
+I furthermore decided to create [a YouTube series](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) of me learning Rust and having
+some fun, while implementing chapter by chapter of the book. You are [welcome to
+join
+me](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) and follow allow while I am working on this week for week.
 
-[![Join me during my development](share/video_link.png)](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO)
+[![Join me during my development](share/youtube_link.jpg)](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO)
 
 ## What has been implemented so far?
 

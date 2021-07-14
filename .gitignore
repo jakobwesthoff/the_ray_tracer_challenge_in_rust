@@ -2,3 +2,4 @@
 output.ppm
 output.png
 .vscode/
+.DS_Store

@@ -1,6 +1,6 @@
-pub mod to_rgba32;
-pub mod to_ppm;
 pub mod to_png;
+pub mod to_ppm;
+pub mod to_rgba32;
 
 use num_traits::Float;
 use num_traits::Num;
@@ -155,9 +155,8 @@ impl<T: Float> Canvas<T> {
 
 #[cfg(test)]
 mod tests {
-  use super::*;
   use super::to_ppm::ToPPM;
-
+  use super::*;
 
   #[test]
   fn colors_are_red_green_blue_tuples() {

@@ -12,7 +12,7 @@ where
 {
   fn to_png(&self) -> Vec<u8> {
     let mut v = Vec::new();
-    let mut encoder = png::Encoder::new(& mut v, self.width() as u32, self.height() as u32);
+    let mut encoder = png::Encoder::new(&mut v, self.width() as u32, self.height() as u32);
     encoder.set_color(png::ColorType::RGBA);
     encoder.set_depth(png::BitDepth::Eight);
     let mut writer = encoder.write_header().unwrap();

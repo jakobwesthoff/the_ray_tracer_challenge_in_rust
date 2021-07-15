@@ -1,13 +1,10 @@
-use num_traits::Float;
-use std::ops;
+use num_traits::{Float, One, Zero};
+use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::fuzzy_eq::*;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Tuple<T>
-where
-  T: Float,
-{
+pub struct Tuple<T> {
   pub x: T,
   pub y: T,
   pub z: T,
@@ -17,14 +14,17 @@ where
 /**
  * Tuple type related functions
  */
-impl<T> Tuple<T>
-where
-  T: Float,
-{
+impl<T> Tuple<T> {
   pub fn new(x: T, y: T, z: T, w: T) -> Self {
     Self { x, y, z, w }
   }
+}
 
+impl<T> Tuple<T>
+where
+  T: Zero,
+  T: One,
+{
   pub fn point(x: T, y: T, z: T) -> Self {
     Self {
       x,
@@ -42,7 +42,14 @@ where
       w: T::zero(),
     }
   }
+}
 
+impl<T> Tuple<T>
+where
+  T: PartialEq,
+  T: One,
+  T: Zero,
+{
   pub fn is_point(&self) -> bool {
     self.w == T::one()
   }
@@ -54,7 +61,6 @@ where
 
 impl<T> FuzzyEq<Tuple<T>> for Tuple<T>
 where
-  T: Float,
   T: FuzzyEq<T>,
 {
   fn fuzzy_eq(&self, other: &Self) -> bool {
@@ -65,9 +71,9 @@ where
   }
 }
 
-impl<T> ops::Add<Self> for Tuple<T>
+impl<T> Add<Self> for Tuple<T>
 where
-  T: Float,
+  T: Add<Output = T>,
 {
   type Output = Self;
 
@@ -81,9 +87,9 @@ where
   }
 }
 
-impl<T> ops::Sub<Self> for Tuple<T>
+impl<T> Sub<Self> for Tuple<T>
 where
-  T: Float,
+  T: Sub<Output = T>,
 {
   type Output = Self;
 
@@ -97,9 +103,9 @@ where
   }
 }
 
-impl<T> ops::Neg for Tuple<T>
+impl<T> Neg for Tuple<T>
 where
-  T: Float,
+  T: Neg<Output = T>,
 {
   type Output = Self;
 
@@ -108,9 +114,10 @@ where
   }
 }
 
-impl<T> ops::Mul<T> for Tuple<T>
+impl<T> Mul<T> for Tuple<T>
 where
-  T: Float,
+  T: Mul<T, Output = T>,
+  T: Copy,
 {
   type Output = Self;
 
@@ -124,9 +131,10 @@ where
   }
 }
 
-impl<T> ops::Div<T> for Tuple<T>
+impl<T> Div<T> for Tuple<T>
 where
-  T: Float,
+  T: Div<T, Output = T>,
+  T: Copy,
 {
   type Output = Self;
 

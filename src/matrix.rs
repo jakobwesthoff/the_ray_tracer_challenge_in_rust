@@ -1,6 +1,6 @@
-use num_traits::Float;
+use num_traits::{Float, One, Zero};
 use std::convert::From;
-use std::ops::{Index, IndexMut, Mul};
+use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
 
 use crate::fuzzy_eq::*;
 use crate::tuple::*;
@@ -8,31 +8,30 @@ use crate::tuple::*;
 // @TODO: Maybe refactor to utilize one Matrix struct in the future.
 //        Are const template parameters an option?
 #[derive(Debug, Copy, Clone)]
-pub struct Matrix<T, const D: usize>
-where
-  T: Float,
-{
+pub struct Matrix<T, const D: usize> {
   data: [[T; D]; D],
 }
 
-impl<T, const D: usize> From<[[T; D]; D]> for Matrix<T, D>
-where
-  T: Float,
-{
+impl<T, const D: usize> From<[[T; D]; D]> for Matrix<T, D> {
   fn from(data: [[T; D]; D]) -> Self {
     Matrix { data }
   }
 }
 
-impl<T, const D: usize> Matrix<T, D>
-where
-  T: Float,
-{
-  pub fn new() -> Matrix<T, D> {
+impl<T, const D: usize> Matrix<T, D> {
+  pub fn new() -> Matrix<T, D>
+  where
+    T: Zero,
+    T: Copy,
+  {
     Matrix::from([[T::zero(); D]; D])
   }
 
-  pub fn diagonal(value: T) -> Matrix<T, D> {
+  pub fn diagonal(value: T) -> Matrix<T, D>
+  where
+    T: Zero,
+    T: Copy,
+  {
     let mut m = Matrix::new();
     for i in 0..D {
       m[i][i] = value;
@@ -40,25 +39,31 @@ where
     return m;
   }
 
-  pub fn identity() -> Matrix<T, D> {
+  pub fn identity() -> Matrix<T, D>
+  where
+    T: One,
+    T: Zero,
+    T: Copy,
+  {
     Matrix::diagonal(T::one())
   }
 
-  pub fn transpose(&self) -> Matrix<T, D> {
+  pub fn transpose(&self) -> Matrix<T, D>
+  where
+    T: Zero,
+    T: Copy,
+  {
     let mut m = Matrix::new();
     for row in 0..D {
       for column in 0..D {
-        m[column][row] = self[row][column];
+        m[column][row] = self.data[row][column];
       }
     }
     return m;
   }
 }
 
-impl<T, const D: usize> Index<usize> for Matrix<T, D>
-where
-  T: Float,
-{
+impl<T, const D: usize> Index<usize> for Matrix<T, D> {
   type Output = [T; D];
 
   fn index(&self, index: usize) -> &Self::Output {
@@ -66,10 +71,7 @@ where
   }
 }
 
-impl<T, const D: usize> IndexMut<usize> for Matrix<T, D>
-where
-  T: Float,
-{
+impl<T, const D: usize> IndexMut<usize> for Matrix<T, D> {
   fn index_mut(&mut self, index: usize) -> &mut Self::Output {
     &mut self.data[index]
   }
@@ -77,7 +79,6 @@ where
 
 impl<T, const D: usize> FuzzyEq<Self> for Matrix<T, D>
 where
-  T: Float,
   T: FuzzyEq<T>,
 {
   fn fuzzy_eq(&self, other: &Self) -> bool {
@@ -95,7 +96,10 @@ where
 
 impl<T, const D: usize> Mul<Matrix<T, D>> for Matrix<T, D>
 where
-  T: Float,
+  T: Mul<Output = T>,
+  T: Add<Output = T>,
+  T: Zero,
+  T: Copy,
 {
   type Output = Matrix<T, D>;
 
@@ -115,7 +119,10 @@ where
 
 impl<T> Matrix<T, 2>
 where
-  T: Float,
+  T: Mul<Output = T>,
+  T: Sub<Output = T>,
+  T: Zero,
+  T: Copy,
 {
   pub fn determinant(&self) -> T {
     self[0][0] * self[1][1] - self[0][1] * self[1][0]
@@ -124,7 +131,8 @@ where
 
 impl<T> Matrix<T, 3>
 where
-  T: Float,
+  T: Zero,
+  T: Copy,
 {
   // @FIXME: Find a nicer way to do this.
   pub fn submatrix(&self, row: usize, column: usize) -> Matrix<T, 2> {
@@ -158,11 +166,24 @@ where
     return m;
   }
 
-  pub fn minor(&self, row: usize, column: usize) -> T {
+  pub fn minor(&self, row: usize, column: usize) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     self.submatrix(row, column).determinant()
   }
 
-  pub fn cofactor(&self, row: usize, column: usize) -> T {
+  pub fn cofactor(&self, row: usize, column: usize) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
@@ -172,7 +193,14 @@ where
     }
   }
 
-  pub fn determinant(&self) -> T {
+  pub fn determinant(&self) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     let mut determinant: T = T::zero();
     for column in 0..3 {
       determinant = determinant + self.cofactor(0, column) * self[0][column];
@@ -182,10 +210,11 @@ where
   }
 }
 
-// @TODO: Generalize once Tuple has been refactored to use Float trait
 impl<T> Mul<Tuple<T>> for Matrix<T, 4>
 where
-  T: Float,
+  T: Mul<Output = T>,
+  T: Add<Output = T>,
+  T: Copy,
 {
   type Output = Tuple<T>;
 
@@ -201,7 +230,8 @@ where
 
 impl<T> Matrix<T, 4>
 where
-  T: Float,
+  T: Zero,
+  T: Copy,
 {
   // @FIXME: Find a nicer way to do this.
   pub fn submatrix(&self, row: usize, column: usize) -> Matrix<T, 3> {
@@ -235,11 +265,25 @@ where
     return m;
   }
 
-  pub fn minor(&self, row: usize, column: usize) -> T {
+  pub fn minor(&self, row: usize, column: usize) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     self.submatrix(row, column).determinant()
   }
 
-  pub fn cofactor(&self, row: usize, column: usize) -> T {
+  pub fn cofactor(&self, row: usize, column: usize) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
@@ -249,7 +293,14 @@ where
     }
   }
 
-  pub fn determinant(&self) -> T {
+  pub fn determinant(&self) -> T
+  where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
+  {
     let mut determinant: T = T::zero();
     for column in 0..4 {
       determinant = determinant + self.cofactor(0, column) * self[0][column];
@@ -260,6 +311,11 @@ where
 
   pub fn is_invertible(&self) -> bool
   where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
     T: FuzzyEq<T>,
   {
     self.determinant().fuzzy_ne(&T::zero())
@@ -267,6 +323,12 @@ where
 
   pub fn inverse(&self) -> Matrix<T, 4>
   where
+    T: Mul<Output = T>,
+    T: Sub<Output = T>,
+    T: Div<Output = T>,
+    T: Neg<Output = T>,
+    T: Zero,
+    T: Copy,
     T: FuzzyEq<T>,
   {
     if !self.is_invertible() {
@@ -288,7 +350,11 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn translation(x: T, y: T, z: T) -> Matrix<T, 4> {
+  pub fn translation(x: T, y: T, z: T) -> Matrix<T, 4>
+  where
+    T: Zero,
+    T: One
+  {
     Matrix::from([
       [T::one(),  T::zero(), T::zero(), x],
       [T::zero(), T::one(),  T::zero(), y],
@@ -298,7 +364,11 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn scaling(x: T, y: T, z: T) -> Matrix<T, 4> {
+  pub fn scaling(x: T, y: T, z: T) -> Matrix<T, 4>
+  where
+    T: Zero,
+    T: One
+  {
     Matrix::from([
       [x,         T::zero(), T::zero(), T::zero()],
       [T::zero(), y,         T::zero(), T::zero()],
@@ -308,7 +378,10 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn rotation_x(r: T) -> Matrix<T, 4> {
+  pub fn rotation_x(r: T) -> Matrix<T, 4>
+  where
+    T: Float,
+  {
     Matrix::from([
       [T::one(),  T::zero(), T::zero(), T::zero()],
       [T::zero(), r.cos(),   -r.sin(),  T::zero()],
@@ -318,7 +391,10 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn rotation_y(r: T) -> Matrix<T, 4> {
+  pub fn rotation_y(r: T) -> Matrix<T, 4>
+  where
+    T: Float,
+  {
     Matrix::from([
       [r.cos(),   T::zero(), r.sin(),   T::zero()],
       [T::zero(), T::one(),  T::zero(), T::zero()],
@@ -328,7 +404,10 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn rotation_z(r: T) -> Matrix<T, 4> {
+  pub fn rotation_z(r: T) -> Matrix<T, 4>
+  where
+    T: Float,
+  {
     Matrix::from([
       [r.cos(),   -r.sin(),  T::zero(), T::zero()],
       [r.sin(),   r.cos(),   T::zero(), T::zero()],
@@ -338,7 +417,11 @@ where
   }
 
   #[rustfmt::skip]
-  pub fn shearing(xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -> Matrix<T, 4> {
+  pub fn shearing(xy: T, xz: T, yx: T, yz: T, zx: T, zy: T) -> Matrix<T, 4>
+  where
+    T: Zero,
+    T: One,
+  {
     Matrix::from([
       [T::one(),  xy,        xz,        T::zero()],
       [yx,        T::one(),  yz,        T::zero()],

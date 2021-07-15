@@ -2,8 +2,7 @@ pub mod to_png;
 pub mod to_ppm;
 pub mod to_rgba32;
 
-use num_traits::Float;
-use num_traits::Num;
+use num_traits::{Float, Num, Zero};
 use std::ops::{Add, Mul, Sub};
 use std::vec::Vec;
 
@@ -15,25 +14,28 @@ pub trait Sized {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Color<T = f64>
-where
-  T: Float,
-{
+pub struct Color<T = f64> {
   pub red: T,
   pub green: T,
   pub blue: T,
 }
 
-impl<T: Float> Color<T> {
+impl<T> Color<T> {
   pub fn new(red: T, green: T, blue: T) -> Self {
     Color { red, green, blue }
   }
 
-  pub fn black() -> Self {
+  pub fn black() -> Self
+  where
+    T: Zero,
+  {
     Color::new(T::zero(), T::zero(), T::zero())
   }
 
-  pub fn clamp(&self, lower_bound: T, upper_bound: T) -> Color<T> {
+  pub fn clamp(&self, lower_bound: T, upper_bound: T) -> Color<T>
+  where
+    T: Float,
+  {
     Color::new(
       self.red.min(upper_bound).max(lower_bound),
       self.green.min(upper_bound).max(lower_bound),
@@ -42,7 +44,10 @@ impl<T: Float> Color<T> {
   }
 }
 
-impl<T: Float> Add for Color<T> {
+impl<T> Add for Color<T>
+where
+  T: Add<Output = T>,
+{
   type Output = Color<T>;
 
   fn add(self, other: Color<T>) -> Self::Output {
@@ -54,7 +59,10 @@ impl<T: Float> Add for Color<T> {
   }
 }
 
-impl<T: Float> Sub for Color<T> {
+impl<T> Sub for Color<T>
+where
+  T: Sub<Output = T>,
+{
   type Output = Color<T>;
 
   fn sub(self, other: Color<T>) -> Self::Output {
@@ -68,8 +76,9 @@ impl<T: Float> Sub for Color<T> {
 
 impl<T, U> Mul<U> for Color<T>
 where
-  T: Float,
+  T: Mul<Output = T>,
   T: From<U>,
+  T: Copy,
   U: Num,
 {
   type Output = Color<T>;
@@ -86,22 +95,21 @@ where
 
 impl<T> Mul<Color<T>> for Color<T>
 where
-  T: Float,
+  T: Mul<Output = T>,
 {
   type Output = Color<T>;
 
   fn mul(self, other: Color<T>) -> Self::Output {
     Color::new(
-      self.red * other.red.into(),
-      self.green * other.green.into(),
-      self.blue * other.blue.into(),
+      self.red * other.red,
+      self.green * other.green,
+      self.blue * other.blue,
     )
   }
 }
 
 impl<T> FuzzyEq<Color<T>> for Color<T>
 where
-  T: Float,
   T: FuzzyEq<T>,
 {
   fn fuzzy_eq(&self, other: &Self) -> bool {
@@ -111,17 +119,14 @@ where
   }
 }
 
-pub struct Canvas<T = f64>
-where
-  T: Float,
-{
+pub struct Canvas<T = f64> {
   pub width: usize,
   pub height: usize,
 
   pixels: Vec<Color<T>>,
 }
 
-impl<T: Float> Sized for Canvas<T> {
+impl<T> Sized for Canvas<T> {
   fn width(&self) -> usize {
     self.width
   }
@@ -130,8 +135,12 @@ impl<T: Float> Sized for Canvas<T> {
   }
 }
 
-impl<T: Float> Canvas<T> {
-  pub fn new(width: usize, height: usize) -> Self {
+impl<T> Canvas<T> {
+  pub fn new(width: usize, height: usize) -> Self
+  where
+    T: Zero,
+    T: Clone,
+  {
     Self {
       width,
       height,
@@ -139,7 +148,10 @@ impl<T: Float> Canvas<T> {
     }
   }
 
-  pub fn pixel_at(&self, x: usize, y: usize) -> Color<T> {
+  pub fn pixel_at(&self, x: usize, y: usize) -> Color<T>
+  where
+    T: Copy,
+  {
     self.pixels[self.get_pixel_index(x, y)]
   }
 

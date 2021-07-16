@@ -41,11 +41,11 @@ impl Tuple {
 impl Tuple
 {
   pub fn is_point(&self) -> bool {
-    self.w == 1.0
+    self.w.fuzzy_eq(&1.0)
     }
 
   pub fn is_vector(&self) -> bool {
-    self.w == 0.0
+    self.w.fuzzy_eq(&0.0)
   }
 }
 

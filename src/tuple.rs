@@ -1,67 +1,55 @@
-use num_traits::{Float, One, Zero};
+use crate::F;
 use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::fuzzy_eq::*;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Tuple<T> {
-  pub x: T,
-  pub y: T,
-  pub z: T,
-  pub w: T,
+pub struct Tuple {
+  pub x: F,
+  pub y: F,
+  pub z: F,
+  pub w: F,
 }
 
 /**
  * Tuple type related functions
  */
-impl<T> Tuple<T> {
-  pub fn new(x: T, y: T, z: T, w: T) -> Self {
+impl Tuple {
+  pub fn new(x: F, y: F, z: F, w: F) -> Self {
     Self { x, y, z, w }
   }
-}
 
-impl<T> Tuple<T>
-where
-  T: Zero,
-  T: One,
-{
-  pub fn point(x: T, y: T, z: T) -> Self {
+  pub fn point(x: F, y: F, z: F) -> Self {
     Self {
       x,
       y,
       z,
-      w: T::one(),
+      w: 1.0,
     }
   }
 
-  pub fn vector(x: T, y: T, z: T) -> Self {
+  pub fn vector(x: F, y: F, z: F) -> Self {
     Self {
       x,
       y,
       z,
-      w: T::zero(),
+      w: 0.0,
     }
   }
 }
 
-impl<T> Tuple<T>
-where
-  T: PartialEq,
-  T: One,
-  T: Zero,
+impl Tuple
 {
   pub fn is_point(&self) -> bool {
-    self.w == T::one()
-  }
+    self.w == 1.0
+    }
 
   pub fn is_vector(&self) -> bool {
-    self.w == T::zero()
+    self.w == 0.0
   }
 }
 
-impl<T> FuzzyEq<Tuple<T>> for Tuple<T>
-where
-  T: FuzzyEq<T>,
+impl FuzzyEq<Tuple> for Tuple
 {
   fn fuzzy_eq(&self, other: &Self) -> bool {
     return self.x.fuzzy_eq(&other.x)
@@ -71,9 +59,7 @@ where
   }
 }
 
-impl<T> Add<Self> for Tuple<T>
-where
-  T: Add<Output = T>,
+impl Add<Self> for Tuple
 {
   type Output = Self;
 
@@ -87,9 +73,7 @@ where
   }
 }
 
-impl<T> Sub<Self> for Tuple<T>
-where
-  T: Sub<Output = T>,
+impl Sub<Self> for Tuple
 {
   type Output = Self;
 
@@ -103,9 +87,7 @@ where
   }
 }
 
-impl<T> Neg for Tuple<T>
-where
-  T: Neg<Output = T>,
+impl Neg for Tuple
 {
   type Output = Self;
 
@@ -114,14 +96,11 @@ where
   }
 }
 
-impl<T> Mul<T> for Tuple<T>
-where
-  T: Mul<T, Output = T>,
-  T: Copy,
+impl Mul<F> for Tuple
 {
   type Output = Self;
 
-  fn mul(self, other: T) -> Self::Output {
+  fn mul(self, other: F) -> Self::Output {
     Tuple::new(
       self.x * other,
       self.y * other,
@@ -131,14 +110,11 @@ where
   }
 }
 
-impl<T> Div<T> for Tuple<T>
-where
-  T: Div<T, Output = T>,
-  T: Copy,
+impl Div<F> for Tuple
 {
   type Output = Self;
 
-  fn div(self, other: T) -> Self::Output {
+  fn div(self, other: F) -> Self::Output {
     Tuple::new(
       self.x / other,
       self.y / other,
@@ -151,11 +127,9 @@ where
 /**
 * Tuple math operations
 */
-impl<T> Tuple<T>
-where
-  T: Float,
+impl Tuple
 {
-  pub fn magnitude(&self) -> T {
+  pub fn magnitude(&self) -> F {
     (self.x.powi(2) + self.y.powi(2) + self.z.powi(2) + self.w.powi(2)).sqrt()
   }
 
@@ -163,11 +137,11 @@ where
     *self / self.magnitude()
   }
 
-  pub fn dot(&self, other: &Tuple<T>) -> T {
+  pub fn dot(&self, other: Tuple) -> F {
     self.x * other.x + self.y * other.y + self.z * other.z + self.w * other.w
   }
 
-  pub fn cross(&self, other: &Tuple<T>) -> Tuple<T> {
+  pub fn cross(&self, other: Tuple) -> Tuple {
     if !self.is_vector() || !other.is_vector() {
       panic!("Cross product can only be calculated for two vectors.");
     }
@@ -416,7 +390,7 @@ mod tests {
     let b = Tuple::vector(2.0, 3.0, 4.0);
 
     let expected_result = 20.0;
-    let actual_result = a.dot(&b);
+    let actual_result = a.dot(b);
 
     assert_fuzzy_eq!(actual_result, expected_result);
   }
@@ -427,7 +401,7 @@ mod tests {
     let b = Tuple::vector(2.0, 3.0, 4.0);
 
     let expected_result = Tuple::vector(-1.0, 2.0, -1.0);
-    let actual_result = a.cross(&b);
+    let actual_result = a.cross(b);
 
     assert_fuzzy_eq!(actual_result, expected_result);
   }
@@ -438,7 +412,7 @@ mod tests {
     let b = Tuple::vector(2.0, 3.0, 4.0);
 
     let expected_result = Tuple::vector(1.0, -2.0, 1.0);
-    let actual_result = b.cross(&a);
+    let actual_result = b.cross(a);
 
     assert_fuzzy_eq!(actual_result, expected_result);
   }

@@ -1,3 +1,4 @@
+use crate::F;
 use num_traits::{Float, One, Zero};
 use std::convert::From;
 use std::ops::{Add, Div, Index, IndexMut, Mul, Neg, Sub};
@@ -210,15 +211,11 @@ where
   }
 }
 
-impl<T> Mul<Tuple<T>> for Matrix<T, 4>
-where
-  T: Mul<Output = T>,
-  T: Add<Output = T>,
-  T: Copy,
+impl Mul<Tuple> for Matrix<F, 4>
 {
-  type Output = Tuple<T>;
+  type Output = Tuple;
 
-  fn mul(self, other: Tuple<T>) -> Self::Output {
+  fn mul(self, other: Tuple) -> Self::Output {
     Tuple::new(
       self[0][0] * other.x + self[0][1] * other.y + self[0][2] * other.z + self[0][3] * other.w,
       self[1][0] * other.x + self[1][1] * other.y + self[1][2] * other.z + self[1][3] * other.w,

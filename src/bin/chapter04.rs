@@ -1,6 +1,5 @@
-extern crate the_ray_tracer_challenge as raytracer;
+src/bin/chapter04.rsextern crate the_ray_tracer_challenge as raytracer;
 
-use num_traits::Float;
 use std::f64::consts::PI;
 use std::fs::write;
 use the_ray_tracer_challenge::matrix::Matrix;
@@ -10,16 +9,14 @@ use raytracer::canvas::to_ppm::*;
 use raytracer::canvas::*;
 use raytracer::tuple::*;
 
-enum Pixel<T> {
+enum Pixel {
   Coordinate { x: usize, y: usize },
-  OutOfBounds { x: T, y: T },
+  OutOfBounds { x: f64, y: f64 },
 }
 
-impl<T> Pixel<T>
-where
-  T: Float,
+impl Pixel
 {
-  pub fn from_point_for_canvas(point: Tuple<T>, canvas: &Canvas) -> Pixel<T> {
+  pub fn from_point_for_canvas(point: Tuple, canvas: &Canvas) -> Pixel {
     if !point.is_point() {
       panic!("Given tuple is not a point. Point needed for conversion to screen space.");
     }
@@ -33,8 +30,8 @@ where
       return Pixel::OutOfBounds { x: rx, y: ry };
     }
 
-    let ux = rx.to_usize().unwrap();
-    let uy = ry.to_usize().unwrap();
+    let ux = rx as usize;
+    let uy = ry as usize;
 
     if ux > canvas.width || uy > canvas.height {
       return Pixel::OutOfBounds { x: rx, y: ry };

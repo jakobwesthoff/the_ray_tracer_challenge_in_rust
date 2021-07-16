@@ -8,35 +8,30 @@ use raytracer::canvas::*;
 use raytracer::tuple::*;
 
 #[derive(Debug)]
-struct Environment
-{
+struct Environment {
   gravity: Tuple,
   wind: Tuple,
 }
 
 #[derive(Debug)]
-struct Projectile
-{
+struct Projectile {
   position: Tuple,
   velocity: Tuple,
 }
 
-impl Projectile
-{
+impl Projectile {
   pub fn new(position: Tuple, velocity: Tuple) -> Self {
     Projectile { position, velocity }
   }
 }
 
-impl Environment
-{
+impl Environment {
   pub fn new(gravity: Tuple, wind: Tuple) -> Self {
     Environment { gravity, wind }
   }
 }
 
-fn tick(environment: &Environment, projectile: &Projectile) -> Projectile
-{
+fn tick(environment: &Environment, projectile: &Projectile) -> Projectile {
   Projectile::new(
     projectile.position + projectile.velocity,
     projectile.velocity + environment.gravity + environment.wind,
@@ -49,8 +44,7 @@ enum Pixel {
 }
 
 impl Pixel {
-  pub fn from_point_for_canvas(point: Tuple, canvas: &Canvas) -> Pixel
-  {
+  pub fn from_point_for_canvas(point: Tuple, canvas: &Canvas) -> Pixel {
     if !point.is_point() {
       panic!("Given tuple is not a point. Point needed for conversion to screen space.");
     }

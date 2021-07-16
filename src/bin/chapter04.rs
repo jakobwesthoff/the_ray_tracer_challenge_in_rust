@@ -14,8 +14,7 @@ enum Pixel {
   OutOfBounds { x: f64, y: f64 },
 }
 
-impl Pixel
-{
+impl Pixel {
   pub fn from_point_for_canvas(point: Tuple, canvas: &Canvas) -> Pixel {
     if !point.is_point() {
       panic!("Given tuple is not a point. Point needed for conversion to screen space.");

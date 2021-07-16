@@ -3,35 +3,30 @@ extern crate the_ray_tracer_challenge as raytracer;
 use raytracer::tuple::*;
 
 #[derive(Debug)]
-struct Environment
-{
+struct Environment {
   gravity: Tuple,
   wind: Tuple,
 }
 
 #[derive(Debug)]
-struct Projectile
-{
+struct Projectile {
   position: Tuple,
   velocity: Tuple,
 }
 
-impl Projectile
-{
+impl Projectile {
   pub fn new(position: Tuple, velocity: Tuple) -> Self {
     Projectile { position, velocity }
   }
 }
 
-impl Environment
-{
+impl Environment {
   pub fn new(gravity: Tuple, wind: Tuple) -> Self {
     Environment { gravity, wind }
   }
 }
 
-fn tick(environment: &Environment, projectile: &Projectile) -> Projectile
-{
+fn tick(environment: &Environment, projectile: &Projectile) -> Projectile {
   Projectile::new(
     projectile.position + projectile.velocity,
     projectile.velocity + environment.gravity + environment.wind,

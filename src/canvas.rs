@@ -25,13 +25,11 @@ impl Color {
     Color { red, green, blue }
   }
 
-  pub fn black() -> Self
-  {
+  pub fn black() -> Self {
     Color::new(0.0, 0.0, 0.0)
   }
 
-  pub fn clamp(&self, lower_bound: F, upper_bound: F) -> Color
-  {
+  pub fn clamp(&self, lower_bound: F, upper_bound: F) -> Color {
     Color::new(
       self.red.min(upper_bound).max(lower_bound),
       self.green.min(upper_bound).max(lower_bound),
@@ -40,8 +38,7 @@ impl Color {
   }
 }
 
-impl Add for Color
-{
+impl Add for Color {
   type Output = Color;
 
   fn add(self, other: Color) -> Self::Output {
@@ -53,8 +50,7 @@ impl Add for Color
   }
 }
 
-impl Sub for Color
-{
+impl Sub for Color {
   type Output = Color;
 
   fn sub(self, other: Color) -> Self::Output {
@@ -66,21 +62,15 @@ impl Sub for Color
   }
 }
 
-impl Mul<F> for Color
-{
+impl Mul<F> for Color {
   type Output = Color;
 
   fn mul(self, other: F) -> Self::Output {
-    Color::new(
-      self.red * other,
-      self.green * other,
-      self.blue * other,
-    )
+    Color::new(self.red * other, self.green * other, self.blue * other)
   }
 }
 
-impl Mul<Color> for Color
-{
+impl Mul<Color> for Color {
   type Output = Color;
 
   fn mul(self, other: Color) -> Self::Output {
@@ -92,8 +82,7 @@ impl Mul<Color> for Color
   }
 }
 
-impl FuzzyEq<Color> for Color
-{
+impl FuzzyEq<Color> for Color {
   fn fuzzy_eq(&self, other: &Self) -> bool {
     self.red.fuzzy_eq(&other.red)
       && self.green.fuzzy_eq(&other.green)
@@ -118,8 +107,7 @@ impl Sized for Canvas {
 }
 
 impl Canvas {
-  pub fn new(width: usize, height: usize) -> Self
-  {
+  pub fn new(width: usize, height: usize) -> Self {
     Self {
       width,
       height,
@@ -127,8 +115,7 @@ impl Canvas {
     }
   }
 
-  pub fn pixel_at(&self, x: usize, y: usize) -> Color
-  {
+  pub fn pixel_at(&self, x: usize, y: usize) -> Color {
     self.pixels[self.get_pixel_index(x, y)]
   }
 

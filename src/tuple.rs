@@ -20,37 +20,25 @@ impl Tuple {
   }
 
   pub fn point(x: F, y: F, z: F) -> Self {
-    Self {
-      x,
-      y,
-      z,
-      w: 1.0,
-    }
+    Self { x, y, z, w: 1.0 }
   }
 
   pub fn vector(x: F, y: F, z: F) -> Self {
-    Self {
-      x,
-      y,
-      z,
-      w: 0.0,
-    }
+    Self { x, y, z, w: 0.0 }
   }
 }
 
-impl Tuple
-{
+impl Tuple {
   pub fn is_point(&self) -> bool {
     self.w.fuzzy_eq(&1.0)
-    }
+  }
 
   pub fn is_vector(&self) -> bool {
     self.w.fuzzy_eq(&0.0)
   }
 }
 
-impl FuzzyEq<Tuple> for Tuple
-{
+impl FuzzyEq<Tuple> for Tuple {
   fn fuzzy_eq(&self, other: &Self) -> bool {
     return self.x.fuzzy_eq(&other.x)
       && self.y.fuzzy_eq(&other.y)
@@ -59,8 +47,7 @@ impl FuzzyEq<Tuple> for Tuple
   }
 }
 
-impl Add<Self> for Tuple
-{
+impl Add<Self> for Tuple {
   type Output = Self;
 
   fn add(self, other: Self) -> Self::Output {
@@ -73,8 +60,7 @@ impl Add<Self> for Tuple
   }
 }
 
-impl Sub<Self> for Tuple
-{
+impl Sub<Self> for Tuple {
   type Output = Self;
 
   fn sub(self, other: Self) -> Self::Output {
@@ -87,8 +73,7 @@ impl Sub<Self> for Tuple
   }
 }
 
-impl Neg for Tuple
-{
+impl Neg for Tuple {
   type Output = Self;
 
   fn neg(self) -> Self::Output {
@@ -96,8 +81,7 @@ impl Neg for Tuple
   }
 }
 
-impl Mul<F> for Tuple
-{
+impl Mul<F> for Tuple {
   type Output = Self;
 
   fn mul(self, other: F) -> Self::Output {
@@ -110,8 +94,7 @@ impl Mul<F> for Tuple
   }
 }
 
-impl Div<F> for Tuple
-{
+impl Div<F> for Tuple {
   type Output = Self;
 
   fn div(self, other: F) -> Self::Output {
@@ -127,8 +110,7 @@ impl Div<F> for Tuple
 /**
 * Tuple math operations
 */
-impl Tuple
-{
+impl Tuple {
   pub fn magnitude(&self) -> F {
     (self.x.powi(2) + self.y.powi(2) + self.z.powi(2) + self.w.powi(2)).sqrt()
   }

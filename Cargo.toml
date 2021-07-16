@@ -6,8 +6,9 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-num-traits = "0.2.14" 
-png = "0.16.8" 
+num-traits = "0.2.14"
+png = "0.16.8"
 
-[dev-dependencies]
-cargo-husky = "1"
+[dev-dependencies.cargo-husky]
+version = "1"
+features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]

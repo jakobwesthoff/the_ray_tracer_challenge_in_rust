@@ -11,7 +11,7 @@ pub trait ToPPM {
     header.extend(format!("{} {}\n", self.width(), self.height()).into_bytes());
     header.extend(format!("{}\n", 255).into_bytes());
 
-    return header;
+    header
   }
 
   fn to_ppm(&self) -> Vec<u8>;

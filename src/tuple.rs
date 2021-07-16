@@ -40,10 +40,10 @@ impl Tuple {
 
 impl FuzzyEq<Tuple> for Tuple {
   fn fuzzy_eq(&self, other: &Self) -> bool {
-    return self.x.fuzzy_eq(&other.x)
+    self.x.fuzzy_eq(&other.x)
       && self.y.fuzzy_eq(&other.y)
       && self.z.fuzzy_eq(&other.z)
-      && self.w.fuzzy_eq(&other.w);
+      && self.w.fuzzy_eq(&other.w)
   }
 }
 

@@ -18,17 +18,23 @@ impl<const D: usize> From<[[F; D]; D]> for Matrix<D> {
   }
 }
 
+impl<const D: usize> Default for Matrix<D> {
+  fn default() -> Self {
+    Self::new()
+  }
+}
+
 impl<const D: usize> Matrix<D> {
   pub fn new() -> Matrix<D> {
     Matrix::from([[0.0; D]; D])
   }
 
   pub fn diagonal(value: F) -> Matrix<D> {
-    let mut m = Matrix::new();
+    let mut matrix = Matrix::new();
     for i in 0..D {
-      m[i][i] = value;
+      matrix[i][i] = value;
     }
-    return m;
+    matrix
   }
 
   pub fn identity() -> Matrix<D> {
@@ -36,13 +42,13 @@ impl<const D: usize> Matrix<D> {
   }
 
   pub fn transpose(&self) -> Matrix<D> {
-    let mut m = Matrix::new();
+    let mut matrix = Matrix::new();
     for row in 0..D {
       for column in 0..D {
-        m[column][row] = self.data[row][column];
+        matrix[column][row] = self.data[row][column];
       }
     }
-    return m;
+    matrix
   }
 }
 
@@ -70,7 +76,7 @@ impl<const D: usize> FuzzyEq<Self> for Matrix<D> {
       }
     }
 
-    return true;
+    true
   }
 }
 
@@ -78,16 +84,16 @@ impl<const D: usize> Mul<Matrix<D>> for Matrix<D> {
   type Output = Matrix<D>;
 
   fn mul(self, other: Matrix<D>) -> Self::Output {
-    let mut m = Matrix::new();
+    let mut matrix = Matrix::new();
 
     for row in 0..D {
       for column in 0..D {
         for i in 0..D {
-          m[row][column] = m[row][column] + self[row][i] * other[i][column];
+          matrix[row][column] += self[row][i] * other[i][column];
         }
       }
     }
-    return m;
+    matrix
   }
 }
 
@@ -100,7 +106,7 @@ impl Matrix<2> {
 impl Matrix<3> {
   // @FIXME: Find a nicer way to do this.
   pub fn submatrix(&self, row: usize, column: usize) -> Matrix<2> {
-    let mut m: Matrix<2> = Matrix::new();
+    let mut matrix: Matrix<2> = Matrix::new();
     let mut source_row: usize = 0;
     let mut source_column: usize = 0;
     let mut target_row: usize = 0;
@@ -116,7 +122,7 @@ impl Matrix<3> {
           // Skip column to be removed
           source_column += 1;
         }
-        m[target_row][target_column] = self[source_row][source_column];
+        matrix[target_row][target_column] = self[source_row][source_column];
 
         source_column += 1;
         target_column += 1;
@@ -127,7 +133,7 @@ impl Matrix<3> {
       target_column = 0;
     }
 
-    return m;
+    matrix
   }
 
   pub fn minor(&self, row: usize, column: usize) -> F {
@@ -138,16 +144,16 @@ impl Matrix<3> {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
-      return minor;
+      minor
     } else {
-      return -minor;
+      -minor
     }
   }
 
   pub fn determinant(&self) -> F {
     let mut determinant: F = 0.0;
     for column in 0..3 {
-      determinant = determinant + self.cofactor(0, column) * self[0][column];
+      determinant += self.cofactor(0, column) * self[0][column];
     }
 
     determinant
@@ -170,7 +176,7 @@ impl Mul<Tuple> for Matrix<4> {
 impl Matrix<4> {
   // @FIXME: Find a nicer way to do this.
   pub fn submatrix(&self, row: usize, column: usize) -> Matrix<3> {
-    let mut m = Matrix::new();
+    let mut matrix = Matrix::new();
     let mut source_row: usize = 0;
     let mut source_column: usize = 0;
     let mut target_row: usize = 0;
@@ -186,7 +192,7 @@ impl Matrix<4> {
           // Skip column to be removed
           source_column += 1;
         }
-        m[target_row][target_column] = self[source_row][source_column];
+        matrix[target_row][target_column] = self[source_row][source_column];
 
         source_column += 1;
         target_column += 1;
@@ -197,7 +203,7 @@ impl Matrix<4> {
       target_column = 0;
     }
 
-    return m;
+    matrix
   }
 
   pub fn minor(&self, row: usize, column: usize) -> F {
@@ -208,16 +214,16 @@ impl Matrix<4> {
     let minor = self.minor(row, column);
     if (row + column) % 2 == 0 {
       // Even value
-      return minor;
+      minor
     } else {
-      return -minor;
+      -minor
     }
   }
 
   pub fn determinant(&self) -> F {
     let mut determinant: F = 0.0;
     for column in 0..4 {
-      determinant = determinant + self.cofactor(0, column) * self[0][column];
+      determinant += self.cofactor(0, column) * self[0][column];
     }
 
     determinant
@@ -232,18 +238,18 @@ impl Matrix<4> {
       panic!("Matrix is not invertible, but inverse was called!");
     }
 
-    let mut m = Matrix::new();
+    let mut matrix = Matrix::new();
     let determinant = self.determinant();
 
     for row in 0..4 {
       for column in 0..4 {
         let cofactor = self.cofactor(row, column);
         // transposed storage
-        m[column][row] = cofactor / determinant;
+        matrix[column][row] = cofactor / determinant;
       }
     }
 
-    return m;
+    matrix
   }
 
   #[rustfmt::skip]

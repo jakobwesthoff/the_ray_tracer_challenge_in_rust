@@ -10,4 +10,5 @@ png = "0.16.8"
 
 [dev-dependencies.cargo-husky]
 version = "1"
-features = ["precommit-hook", "run-cargo-test", "run-cargo-clippy"]
+default-features = false
+features = ["prepush-hook", "run-for-all", "run-cargo-test", "run-cargo-clippy"]

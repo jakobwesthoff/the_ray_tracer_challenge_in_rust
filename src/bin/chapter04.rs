@@ -1,4 +1,4 @@
-src/bin/chapter04.rsextern crate the_ray_tracer_challenge as raytracer;
+extern crate the_ray_tracer_challenge as raytracer;
 
 use std::f64::consts::PI;
 use std::fs::write;

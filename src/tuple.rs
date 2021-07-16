@@ -30,20 +30,20 @@ impl Tuple {
 
 impl Tuple {
   pub fn is_point(&self) -> bool {
-    self.w.fuzzy_eq(&1.0)
+    self.w.fuzzy_eq(1.0)
   }
 
   pub fn is_vector(&self) -> bool {
-    self.w.fuzzy_eq(&0.0)
+    self.w.fuzzy_eq(0.0)
   }
 }
 
 impl FuzzyEq<Tuple> for Tuple {
-  fn fuzzy_eq(&self, other: &Self) -> bool {
-    self.x.fuzzy_eq(&other.x)
-      && self.y.fuzzy_eq(&other.y)
-      && self.z.fuzzy_eq(&other.z)
-      && self.w.fuzzy_eq(&other.w)
+  fn fuzzy_eq(&self, other: Self) -> bool {
+    self.x.fuzzy_eq(other.x)
+      && self.y.fuzzy_eq(other.y)
+      && self.z.fuzzy_eq(other.z)
+      && self.w.fuzzy_eq(other.w)
   }
 }
 

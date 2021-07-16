@@ -83,10 +83,10 @@ impl Mul<Color> for Color {
 }
 
 impl FuzzyEq<Color> for Color {
-  fn fuzzy_eq(&self, other: &Self) -> bool {
-    self.red.fuzzy_eq(&other.red)
-      && self.green.fuzzy_eq(&other.green)
-      && self.blue.fuzzy_eq(&other.blue)
+  fn fuzzy_eq(&self, other: Self) -> bool {
+    self.red.fuzzy_eq(other.red)
+      && self.green.fuzzy_eq(other.green)
+      && self.blue.fuzzy_eq(other.blue)
   }
 }
 

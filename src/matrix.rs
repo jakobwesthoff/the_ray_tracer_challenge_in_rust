@@ -67,10 +67,10 @@ impl<const D: usize> IndexMut<usize> for Matrix<D> {
 }
 
 impl<const D: usize> FuzzyEq<Self> for Matrix<D> {
-  fn fuzzy_eq(&self, other: &Self) -> bool {
+  fn fuzzy_eq(&self, other: Self) -> bool {
     for row in 0..D {
       for column in 0..D {
-        if self[row][column].fuzzy_ne(&other[row][column]) {
+        if self[row][column].fuzzy_ne(other[row][column]) {
           return false;
         }
       }
@@ -230,7 +230,7 @@ impl Matrix<4> {
   }
 
   pub fn is_invertible(&self) -> bool {
-    self.determinant().fuzzy_ne(&0.0)
+    self.determinant().fuzzy_ne(0.0)
   }
 
   pub fn inverse(&self) -> Matrix<4> {

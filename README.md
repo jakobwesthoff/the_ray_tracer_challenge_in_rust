@@ -22,7 +22,7 @@ me](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) an
 - [X] Chapter 02: Drawing on a Canvas
 - [X] Chapter 03: Matrices
 - [X] Chapter 04: Matrix Transformations
-- [ ] Chapter 05: Ray-Sphere Intersections
+- [X] Chapter 05: Ray-Sphere Intersections
 - [ ] Chapter 06: Light and Shading
 - [ ] Chapter 07: Making a Scene
 - [ ] Chapter 08: Shadows

@@ -1,4 +1,3 @@
-use the_ray_tracer_challenge::canvas::to_ppm::*;
 use the_ray_tracer_challenge::canvas::to_png::*;
 use the_ray_tracer_challenge::canvas::*;
 use the_ray_tracer_challenge::body::*;
@@ -48,9 +47,6 @@ fn main() {
   }
   progress.finish();
 
-  println!("Writing ./output.ppm");
-  let ppm = canvas.to_ppm();
-  write("./output.ppm", ppm).expect("Could not write ouput.ppm to disk.");
   println!("Writing ./output.png");
   let png = canvas.to_png();
   write("./output.png", png).expect("Could not write ouput.png to disk.");

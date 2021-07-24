@@ -7,7 +7,7 @@ use crate::tuple::*;
 
 // @TODO: Maybe refactor to utilize one Matrix struct in the future.
 //        Are const template parameters an option?
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Matrix<const D: usize> {
   data: [[F; D]; D],
 }

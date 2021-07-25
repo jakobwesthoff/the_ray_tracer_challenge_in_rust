@@ -134,6 +134,10 @@ impl Tuple {
       self.x * other.y - self.y * other.x,
     )
   }
+
+  pub fn reflect(&self, normal: Tuple) -> Tuple {
+    *self - normal * 2.0 * self.dot(normal)
+  }
 }
 
 #[cfg(test)]
@@ -397,5 +401,28 @@ mod tests {
     let actual_result = b.cross(a);
 
     assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn reflecting_a_vector_approaching_at_45_degrees() {
+    let v = Tuple::vector(1.0, -1.0, 0.0);
+    let n = Tuple::vector(0.0, 1.0, 0.0);
+    let r = v.reflect(n);
+
+    let expected_result = Tuple::vector(1.0, 1.0, 0.0);
+
+    assert_fuzzy_eq!(r, expected_result);
+  }
+
+  #[test]
+  fn reflecting_a_vector_of_a_slanted_surface() {
+    let v = Tuple::vector(0.0, -1.0, 0.0);
+    let sqrt2_over_2 = (2.0 as F).sqrt() / 2.0;
+    let n = Tuple::vector(sqrt2_over_2, sqrt2_over_2, 0.0);
+    let r = v.reflect(n);
+
+    let expected_result = Tuple::vector(1.0, 0.0, 0.0);
+
+    assert_fuzzy_eq!(r, expected_result);
   }
 }

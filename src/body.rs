@@ -1,9 +1,11 @@
+use crate::tuple::*;
 use crate::intersections::*;
 use crate::ray::*;
 use crate::sphere::*;
 
 pub trait Intersectable {
   fn intersect(&self, ray: Ray) -> Intersections;
+  fn normal_at(&self, point: Tuple) -> Tuple;
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -21,6 +23,12 @@ impl Intersectable for Body {
   fn intersect(&self, ray: Ray) -> Intersections {
     match *self {
       Body::Sphere(ref sphere) => sphere.intersect(ray),
+    }
+  }
+
+  fn normal_at(&self, point: Tuple) -> Tuple {
+    match *self {
+      Body::Sphere(ref sphere) => sphere.normal_at(point),
     }
   }
 }

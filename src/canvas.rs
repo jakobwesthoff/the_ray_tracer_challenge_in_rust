@@ -13,7 +13,7 @@ pub trait Sized {
   fn height(&self) -> usize;
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Color {
   pub red: F,
   pub green: F,

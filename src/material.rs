@@ -1,14 +1,40 @@
 use crate::canvas::Color;
+use crate::fuzzy_eq::*;
 use crate::F;
 
 pub trait Illuminated {}
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Material {
   Phong(Phong),
 }
 
+impl From<Phong> for Material {
+  fn from(phong: Phong) -> Self {
+    Material::Phong(phong)
+  }
+}
+
+impl Default for Material {
+  fn default() -> Self {
+    Material::from(Phong::default())
+  }
+}
+
+impl FuzzyEq<Material> for Material {
+  fn fuzzy_eq(&self, other: Material) -> bool {
+    match (self, other) {
+      (Material::Phong(ref m), Material::Phong(other)) => m.fuzzy_eq(other),
+      // Add default case (different types) to return false, once more than one
+      // Material exists
+      // _ => false,
+    }
+  }
+}
+
 impl Illuminated for Material {}
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Phong {
   pub color: Color,
   pub ambient: F,
@@ -41,12 +67,21 @@ impl Phong {
   }
 }
 
+impl FuzzyEq<Phong> for Phong {
+  fn fuzzy_eq(&self, other: Phong) -> bool {
+    self.color.fuzzy_eq(other.color)
+      && self.ambient.fuzzy_eq(other.ambient)
+      && self.diffuse.fuzzy_eq(other.diffuse)
+      && self.specular.fuzzy_eq(other.specular)
+      && self.shininess.fuzzy_eq(other.shininess)
+  }
+}
+
 impl Illuminated for Phong {}
 
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::fuzzy_eq::*;
 
   #[test]
   fn default_phong_material() {

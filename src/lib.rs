@@ -10,3 +10,4 @@ pub mod ray;
 pub mod body;
 pub mod intersections;
 pub mod sphere;
+pub mod light;

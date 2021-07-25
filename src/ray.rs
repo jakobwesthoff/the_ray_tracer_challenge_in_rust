@@ -1,7 +1,8 @@
 use crate::matrix::*;
-use crate::F;
 use crate::tuple::*;
+use crate::F;
 
+#[derive(Copy, Clone, Debug)]
 pub struct Ray {
   pub origin: Tuple,
   pub direction: Tuple,
@@ -25,8 +26,6 @@ impl Ray {
       direction: m * self.direction,
     }
   }
-
-
 }
 
 #[cfg(test)]
@@ -54,7 +53,6 @@ mod tests {
     assert_fuzzy_eq!(ray.position(-1.0), Tuple::point(1.0, 3.0, 4.0));
     assert_fuzzy_eq!(ray.position(2.5), Tuple::point(4.5, 3.0, 4.0));
   }
-  
   #[test]
   fn translating_a_ray() {
     let r = Ray::new(Tuple::point(1.0, 2.0, 3.0), Tuple::vector(0.0, 1.0, 0.0));

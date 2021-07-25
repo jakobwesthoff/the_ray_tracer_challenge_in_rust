@@ -75,6 +75,13 @@ impl Phong {
       shininess,
     }
   }
+
+  pub fn with_color(color: Color) -> Self {
+    Phong {
+      color,
+      ..Self::default()
+    }
+  }
 }
 
 impl FuzzyEq<Phong> for Phong {
@@ -94,13 +101,11 @@ impl Illuminated for Phong {
     let specular_light: Color;
 
     let effective_color = self.color * light.intensity;
-    
     let lightv = (light.position - position).normalize();
 
     ambient_light = effective_color * self.ambient;
 
     let light_dot_normal = lightv.dot(normalv);
-    
     if light_dot_normal < 0.0 {
       // Light is on the other side of the surface
       diffuse_light = Color::black();

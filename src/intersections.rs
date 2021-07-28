@@ -1,5 +1,5 @@
-use crate::F;
 use crate::body::*;
+use crate::F;
 use core::ops::Index;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -56,6 +56,15 @@ impl Index<usize> for Intersections {
   type Output = Intersection;
   fn index(&self, index: usize) -> &Self::Output {
     &self.data[index]
+  }
+}
+
+impl IntoIterator for Intersections {
+  type Item = Intersection;
+  type IntoIter = std::vec::IntoIter<Self::Item>;
+
+  fn into_iter(self) -> Self::IntoIter {
+    self.data.into_iter()
   }
 }
 

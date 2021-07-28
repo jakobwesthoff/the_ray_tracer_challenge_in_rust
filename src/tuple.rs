@@ -3,7 +3,7 @@ use std::ops::{Add, Div, Mul, Neg, Sub};
 
 use crate::fuzzy_eq::*;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Tuple {
   pub x: F,
   pub y: F,

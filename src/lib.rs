@@ -12,3 +12,4 @@ pub mod intersections;
 pub mod sphere;
 pub mod light;
 pub mod material;
+pub mod world;

@@ -13,3 +13,4 @@ pub mod sphere;
 pub mod light;
 pub mod material;
 pub mod world;
+pub mod computed_intersection;

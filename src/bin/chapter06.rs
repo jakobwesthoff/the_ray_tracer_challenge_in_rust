@@ -6,7 +6,7 @@ use the_ray_tracer_challenge::body::*;
 use the_ray_tracer_challenge::canvas::to_png::*;
 use the_ray_tracer_challenge::canvas::*;
 use the_ray_tracer_challenge::light::PointLight;
-use the_ray_tracer_challenge::material::{Material, Illuminated, Phong};
+use the_ray_tracer_challenge::material::{Illuminated, Material, Phong};
 use the_ray_tracer_challenge::ray::*;
 use the_ray_tracer_challenge::sphere::*;
 use the_ray_tracer_challenge::tuple::*;
@@ -21,7 +21,7 @@ fn main() {
   let canvas_size = 4096;
   let canvas_pixel_world_size = wall_size / canvas_size as f64;
 
-  let material = Material::from(Phong::with_color(Color::new(1.0, 0.15, 1.0)));
+  let material = Material::from(Phong::with_color(Color::new(0.1, 0.75, 1.0)));
   let sphere = Sphere::with_material(material, None);
 
   let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
@@ -49,14 +49,16 @@ fn main() {
       let ray = Ray::new(ray_origin, (wall_point - ray_origin).normalize());
 
       let xs = sphere.intersect(ray);
-      
+
       let hit = xs.hit();
 
       if let Some(hit) = hit {
-        let position = ray.position(hit.t);
-        let normalv = hit.body.normal_at(position);
-        let eyev = -ray.direction;
-        let color = hit.body.material().lighting(light, position, eyev, normalv);
+        let computed = hit.get_computed();
+        let color =
+          hit
+            .body
+            .material()
+            .lighting(light, computed.point, computed.eyev, computed.normalv);
 
         let mut canvas = canvas_mutex.lock().unwrap();
         canvas.write_pixel(x, y, color);

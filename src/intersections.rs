@@ -1,4 +1,5 @@
 use crate::body::*;
+use crate::computed_intersection::ComputedIntersection;
 use crate::ray::Ray;
 use crate::F;
 use core::ops::Index;
@@ -13,6 +14,14 @@ pub struct Intersection {
 impl Intersection {
   pub fn new(t: F, ray: Ray, body: Body) -> Intersection {
     Intersection { t, ray, body }
+  }
+
+  pub fn get_computed(&self) -> ComputedIntersection {
+    let position = self.ray.position(self.t);
+    let normalv = self.body.normal_at(position);
+    let eyev = -self.ray.direction;
+
+    ComputedIntersection::new(self, position, normalv, eyev)
   }
 }
 
@@ -75,6 +84,7 @@ mod tests {
   use super::*;
   use crate::sphere::Sphere;
   use crate::tuple::Tuple;
+  use crate::fuzzy_eq::*;
 
   #[test]
   fn the_hit_when_all_intersections_have_positive_t() {
@@ -116,5 +126,18 @@ mod tests {
     let xs = Intersections::new(vec![i2, i1]);
 
     assert_eq!(xs.hit(), None);
+  }
+
+  #[test]
+  fn precomputing_the_state_of_an_intersection() {
+    let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+    let body = Body::from(Sphere::new(None));
+    let i = Intersection::new(4.0, r, body);
+    let c = i.get_computed();
+
+    assert_eq!(c.intersection, &i);
+    assert_fuzzy_eq!(c.point, Tuple::point(0.0, 0.0, -1.0));
+    assert_fuzzy_eq!(c.eyev, Tuple::vector(0.0, 0.0, -1.0));
+    assert_fuzzy_eq!(c.normalv, Tuple::vector(0.0, 0.0, -1.0));
   }
 }

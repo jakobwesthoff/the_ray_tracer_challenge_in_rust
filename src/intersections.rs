@@ -18,10 +18,15 @@ impl Intersection {
 
   pub fn get_computed(&self) -> ComputedIntersection {
     let position = self.ray.position(self.t);
-    let normalv = self.body.normal_at(position);
+    let mut normalv = self.body.normal_at(position);
     let eyev = -self.ray.direction;
+    let inside = normalv.dot(eyev) < 0.0;
 
-    ComputedIntersection::new(self, position, normalv, eyev)
+    if inside {
+      normalv = -normalv;
+    }
+
+    ComputedIntersection::new(self, position, normalv, eyev, inside)
   }
 }
 
@@ -139,5 +144,26 @@ mod tests {
     assert_fuzzy_eq!(c.point, Tuple::point(0.0, 0.0, -1.0));
     assert_fuzzy_eq!(c.eyev, Tuple::vector(0.0, 0.0, -1.0));
     assert_fuzzy_eq!(c.normalv, Tuple::vector(0.0, 0.0, -1.0));
+  }
+
+  #[test]
+  fn the_hit_when_an_intersection_occurs_on_the_outside() {
+    let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+    let body = Body::from(Sphere::new(None));
+    let i = Intersection::new(4.0, r, body);
+    let c = i.get_computed();
+
+    assert_eq!(c.inside, false);
+  }
+
+  #[test]
+  fn the_hit_when_an_intersection_occurs_on_the_inside() {
+    let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
+    let body = Body::from(Sphere::new(None));
+    let i = Intersection::new(1.0, r, body);
+    let c = i.get_computed();
+
+    assert_eq!(c.inside, true);
+    assert_eq!(c.normalv, Tuple::vector(0.0, 0.0, -1.0));
   }
 }

@@ -50,8 +50,8 @@ impl Intersectable for Sphere {
       let t1 = (-b - descriminant.sqrt()) / (2.0 * a);
       let t2 = (-b + descriminant.sqrt()) / (2.0 * a);
       Intersections::new(vec![
-        Intersection::new(t1, Body::from(*self)),
-        Intersection::new(t2, Body::from(*self)),
+        Intersection::new(t1, ray, Body::from(*self)),
+        Intersection::new(t2, ray, Body::from(*self)),
       ])
     }
   }

@@ -2,7 +2,7 @@ use crate::matrix::*;
 use crate::tuple::*;
 use crate::F;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Ray {
   pub origin: Tuple,
   pub direction: Tuple,

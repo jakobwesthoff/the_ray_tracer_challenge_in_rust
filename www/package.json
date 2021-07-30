@@ -25,14 +25,18 @@
   "bugs": {
     "url": "https://github.com/rustwasm/create-wasm-app/issues"
   },
-"homepage": "https://github.com/rustwasm/create-wasm-app#readme",
-"dependencies": {  
-    "the-raytracer-challenge": "file:../pkg"
+  "homepage": "https://github.com/rustwasm/create-wasm-app#readme",
+  "dependencies": {
+    "@wasm-tool/wasm-pack-plugin": "^1.5.0",
+    "comlink": "^4.3.1",
+    "file-loader": "^6.2.0",
+    "the-raytracer-challenge": "file:../pkg",
+    "worker-loader": "^3.0.8"
   },
   "devDependencies": {
+    "copy-webpack-plugin": "^5.0.0",
     "webpack": "^4.29.3",
     "webpack-cli": "^3.1.0",
-    "webpack-dev-server": "^3.1.5",
-    "copy-webpack-plugin": "^5.0.0"
+    "webpack-dev-server": "^3.1.5"
   }
 }

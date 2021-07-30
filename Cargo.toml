@@ -46,11 +46,7 @@ js-sys = "0.3.51"
 [dependencies.web-sys]
 version = "0.3.4"
 features = [
-  'CanvasRenderingContext2d',
-  'Document',
-  'Element',
-  'HtmlCanvasElement',
-  'Window',
+  'ImageData',
 ]
 
 [dev-dependencies.cargo-husky]

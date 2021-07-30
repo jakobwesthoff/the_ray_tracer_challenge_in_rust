@@ -1,4 +1,6 @@
-use wasm_bindgen::prelude::*;
+use std::panic;
+
+use wasm_bindgen::{prelude::*, Clamped};
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -23,7 +25,7 @@ pub mod sphere;
 pub mod tuple;
 pub mod world;
 
-use web_sys::CanvasRenderingContext2d;
+use web_sys::ImageData;
 
 use crate::body::Intersectable;
 
@@ -34,13 +36,13 @@ use crate::ray::Ray;
 use crate::sphere::Sphere;
 use crate::tuple::Tuple;
 
-// #[wasm_bindgen]
-// extern "C" {
-//   // Use `js_namespace` here to bind `console.log(..)` instead of just
-//   // `log(..)`
-//   #[wasm_bindgen(js_namespace = console)]
-//   fn log(s: &str);
-// }
+#[wasm_bindgen]
+extern "C" {
+  // Use `js_namespace` here to bind `console.log(..)` instead of just
+  // `log(..)`
+  #[wasm_bindgen(js_namespace = console)]
+  fn log(s: &str);
+}
 
 // Next let's define a macro that's like `println!`, only it works for
 // `console.log`. Note that `println!` doesn't actually work on the wasm target
@@ -52,8 +54,15 @@ use crate::tuple::Tuple;
 //     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 // }
 
+#[wasm_bindgen(start)]
+pub fn start() -> Result<(), JsValue> {
+  panic::set_hook(Box::new(console_error_panic_hook::hook));
+  Ok(())
+}
+
 #[wasm_bindgen]
 pub struct World {
+  canvas_size: u32,
   ray_origin: Tuple,
   wall_position_z: F,
   wall_size: F,
@@ -67,11 +76,13 @@ pub struct World {
 
 #[wasm_bindgen]
 impl World {
-  pub fn new(canvas_size: usize) -> Self {
-    let material = Material::from(Phong::with_color(Color::new(0.1, 0.75, 1.0)));
+  #[wasm_bindgen(constructor)]
+  pub fn new(canvas_size: u32) -> Self {
+    let material = Material::from(Phong::with_color(Color::new(1.0, 0.65, 0.0)));
     let wall_size = 10.0;
 
     World {
+      canvas_size,
       ray_origin: Tuple::point(0.0, 0.0, -5.0),
       wall_position_z: 11.0,
       wall_size,
@@ -82,41 +93,47 @@ impl World {
     }
   }
 
-  pub fn render(&self, context: &CanvasRenderingContext2d, x: f64, y: f64) {
-    let half = self.wall_size / 2.0;
-    let world_x = -half + x * self.canvas_pixel_world_size;
-    let world_y = half - y * self.canvas_pixel_world_size;
-
-    let wall_point = Tuple::point(world_x, world_y, self.wall_position_z);
-
-    let ray = Ray::new(self.ray_origin, (wall_point - self.ray_origin).normalize());
-
-    let xs = self.sphere.intersect(ray);
-
-    let hit = xs.hit();
-
-    if let Some(hit) = hit {
-      let computed = hit.get_computed();
-      let color =
-        hit
-          .body
-          .material()
-          .lighting(self.light, computed.point, computed.eyev, computed.normalv);
-
-      let rgba = format!(
-        "rgba({},{},{}, 1.0)",
-        (color.red * 255.0).round(),
-        (color.green * 255.0).round(),
-        (color.blue * 255.0).round(),
-      );
-
-      context.set_fill_style(&rgba.into());
-      context.fill_rect(x, y, 1.0, 1.0);
-    } else {
-      let rgba = "rgba(0, 0, 0, 1.0)";
-
-      context.set_fill_style(&rgba.into());
-      context.fill_rect(x, y, 1.0, 1.0);
+  pub fn render(&self, y: f64) -> Result<ImageData, JsValue> {
+    // Skip the "cost" of initializing the vector, as we are writing everywhere
+    // in it later on
+    let data_size = self.canvas_size as usize * 4;
+    let mut data: Vec<u8> = Vec::with_capacity(data_size);
+    unsafe {
+      data.set_len(data_size);
     }
+
+    for x in 0..self.canvas_size {
+      let half = self.wall_size / 2.0;
+      let world_x = -half + (x as f64) * self.canvas_pixel_world_size;
+      let world_y = half - y * self.canvas_pixel_world_size;
+
+      let wall_point = Tuple::point(world_x, world_y, self.wall_position_z);
+
+      let ray = Ray::new(self.ray_origin, (wall_point - self.ray_origin).normalize());
+
+      let xs = self.sphere.intersect(ray);
+
+      let hit = xs.hit();
+
+      let mut fragment_color = Color::black();
+
+      if let Some(hit) = hit {
+        let computed = hit.get_computed();
+        fragment_color =
+          hit
+            .body
+            .material()
+            .lighting(self.light, computed.point, computed.eyev, computed.normalv);
+      }
+
+      #[allow(clippy::identity_op)]
+      {
+        data[(x * 4 + 0) as usize] = (fragment_color.red * 255.0).round() as u8;
+        data[(x * 4 + 1) as usize] = (fragment_color.green * 255.0).round() as u8;
+        data[(x * 4 + 2) as usize] = (fragment_color.blue * 255.0).round() as u8;
+        data[(x * 4 + 3) as usize] = 255;
+      }
+    }
+    ImageData::new_with_u8_clamped_array_and_sh(Clamped(&data), self.canvas_size, 1)
   }
 }

@@ -3,6 +3,20 @@ name = "the_ray_tracer_challenge"
 version = "0.1.0"
 edition = "2018"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+default = ["console_error_panic_hook"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.13"
+
+[profile.release]
+# Tell `rustc` to optimize for small code size.
+opt-level = 3
+lto = true
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -11,7 +25,38 @@ indicatif = "0.16.2"
 rayon = "1.5.1" 
 itertools = "0.10.1"
 
+# WASM stuff
+wasm-bindgen = "0.2.63"
+
+# The `console_error_panic_hook` crate provides better debugging of panics by
+# logging them with `console.error`. This is great for development, but requires
+# all the `std::fmt` and `std::panicking` infrastructure, so isn't great for
+# code size when deploying.
+console_error_panic_hook = { version = "0.1.6", optional = true }
+
+# `wee_alloc` is a tiny allocator for wasm that is only ~1K in code size
+# compared to the default allocator's ~10K. It is slower than the default
+# allocator, however.
+#
+# Unfortunately, `wee_alloc` requires nightly Rust when targeting wasm for now.
+wee_alloc = { version = "0.4.5", optional = true }
+
+js-sys = "0.3.51"
+
+[dependencies.web-sys]
+version = "0.3.4"
+features = [
+  'CanvasRenderingContext2d',
+  'Document',
+  'Element',
+  'HtmlCanvasElement',
+  'Window',
+]
+
 [dev-dependencies.cargo-husky]
 version = "1"
 default-features = false
 features = ["prepush-hook", "run-for-all", "run-cargo-test", "run-cargo-clippy"]
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

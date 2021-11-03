@@ -24,19 +24,17 @@ fn main() {
   let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
   // Floor and walls
-  let floor_and_wall_material = Material::from(Phong {
-    color: Color::new(0.5, 0.45, 0.45),
-    specular: 0.0,
-    ..Phong::default()
-  });
+  let floor_and_wall_material = Phong::default()
+    .with_color(Color::new(0.5, 0.45, 0.45))
+    .with_specular(0.0);
 
   let floor_sphere = Sphere::with_material(
-    floor_and_wall_material,
+    Material::from(floor_and_wall_material),
     Some(Matrix::scaling(10.0, 0.01, 10.0)),
   );
 
   let left_wall_sphere = Sphere::with_material(
-    floor_and_wall_material,
+    Material::from(floor_and_wall_material),
     Some(
       Matrix::translation(0.0, 0.0, 5.0)
         * Matrix::rotation_y(-PI / 4.0)
@@ -46,7 +44,7 @@ fn main() {
   );
 
   let right_wall_sphere = Sphere::with_material(
-    floor_and_wall_material,
+    Material::from(floor_and_wall_material),
     Some(
       Matrix::translation(0.0, 0.0, 5.0)
         * Matrix::rotation_y(PI / 4.0)
@@ -56,31 +54,26 @@ fn main() {
   );
 
   // Spheres
-  let left_material = Material::from(Phong {
-    color: Color::new(0.78, 0.28, 0.96),
-    ..Phong::default()
-  });
+  let left_material = Phong::default().with_color(Color::new(0.78, 0.28, 0.96));
   let left_sphere = Sphere::with_material(
-    left_material,
+    Material::from(left_material),
     Some(Matrix::translation(-1.5, 0.33, -0.75) * Matrix::scaling(0.33, 0.33, 0.33)),
   );
 
-  let middle_material = Material::from(Phong {
-    color: Color::new(1.0, 0.49, 0.0),
-    diffuse: 0.7,
-    specular: 0.1,
-    shininess: 50.0,
-    ..Phong::default()
-  });
-  let middle_sphere =
-    Sphere::with_material(middle_material, Some(Matrix::translation(-0.5, 1.0, 0.5)));
+  let middle_material = Phong::default()
+    .with_color(Color::new(1.0, 0.49, 0.0))
+    .with_diffuse(0.7)
+    .with_specular(0.1)
+    .with_shininess(50.0);
 
-  let right_material = Material::from(Phong {
-    color: Color::new(0.51, 0.75, 0.06),
-    ..Phong::default()
-  });
+  let middle_sphere = Sphere::with_material(
+    Material::from(middle_material),
+    Some(Matrix::translation(-0.5, 1.0, 0.5)),
+  );
+
+  let right_material = Phong::default().with_color(Color::new(0.51, 0.75, 0.06));
   let right_sphere = Sphere::with_material(
-    right_material,
+    Material::from(right_material),
     Some(Matrix::translation(1.5, 0.5, -0.5) * Matrix::scaling(0.5, 0.5, 0.5)),
   );
 

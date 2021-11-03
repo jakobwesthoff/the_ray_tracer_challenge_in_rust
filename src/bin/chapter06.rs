@@ -21,7 +21,7 @@ fn main() {
   let canvas_size = 4096;
   let canvas_pixel_world_size = wall_size / canvas_size as f64;
 
-  let material = Material::from(Phong::with_color(Color::new(0.1, 0.75, 1.0)));
+  let material = Material::from(Phong::default().with_color(Color::new(0.1, 0.75, 1.0)));
   let sphere = Sphere::with_material(material, None);
 
   let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));

@@ -317,6 +317,24 @@ impl Matrix<4> {
       [0.0, 0.0, 0.0, 1.0],
     ])
   }
+
+  pub fn view_transform(from: Tuple, to: Tuple, up: Tuple) -> Self {
+    let forward = (to - from).normalize();
+    let left = forward.cross(up.normalize());
+    let true_up = left.cross(forward);
+
+    #[rustfmt::skip]
+    let orientation_transform = Matrix::from([
+      [ left.x,     left.y,     left.z,    0.0],
+      [ true_up.x,  true_up.y,  true_up.z, 0.0],
+      [-forward.x, -forward.y, -forward.z, 0.0],
+      [0.0,         0.0,        0.0,       1.0]
+    ]);
+
+    let translation_transform = Matrix::translation(-from.x, -from.y, -from.z);
+
+    orientation_transform * translation_transform
+  }
 }
 
 #[cfg(test)]
@@ -997,5 +1015,49 @@ mod tests {
 
     let transform = c * b * a;
     assert_fuzzy_eq!(transform * p, Tuple::point(15.0, 0.0, 7.0));
+  }
+
+  #[test]
+  fn view_transform_for_the_default_orientation() {
+    let from = Tuple::point(0.0, 0.0, 0.0);
+    let to = Tuple::point(0.0, 0.0, -1.0);
+    let up = Tuple::vector(0.0, 1.0, 0.0);
+    let matrix = Matrix::view_transform(from, to, up);
+    assert_fuzzy_eq!(matrix, Matrix::identity());
+  }
+
+  #[test]
+  fn view_transformation_looking_into_positive_z_direction() {
+    let from = Tuple::point(0.0, 0.0, 0.0);
+    let to = Tuple::point(0.0, 0.0, 1.0);
+    let up = Tuple::vector(0.0, 1.0, 0.0);
+    let matrix = Matrix::view_transform(from, to, up);
+    assert_fuzzy_eq!(matrix, Matrix::scaling(-1.0, 1.0, -1.0));
+  }
+
+  #[test]
+  fn view_transformation_moves_the_world() {
+    let from = Tuple::point(0.0, 0.0, 8.0);
+    let to = Tuple::point(0.0, 0.0, 0.0);
+    let up = Tuple::vector(0.0, 1.0, 0.0);
+    let matrix = Matrix::view_transform(from, to, up);
+    assert_fuzzy_eq!(matrix, Matrix::translation(0.0, 0.0, -8.0));
+  }
+
+  #[test]
+  fn an_arbitrary_view_transformation() {
+    let from = Tuple::point(1.0, 3.0, 2.0);
+    let to = Tuple::point(4.0, -2.0, 8.0);
+    let up = Tuple::vector(1.0, 1.0, 0.0);
+    let matrix = Matrix::view_transform(from, to, up);
+    assert_fuzzy_eq!(
+      matrix,
+      Matrix::from([
+        [-0.50709, 0.50709, 0.67612, -2.36643],
+        [0.76772, 0.60609, 0.12122, -2.82843],
+        [-0.35857, 0.59761, -0.71714, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+      ])
+    );
   }
 }

@@ -77,9 +77,8 @@ impl Camera {
     let wall_point = inverse_view_transform * Tuple::point(world_x, world_y, -1.0);
     let ray_origin = inverse_view_transform * Tuple::point(0.0, 0.0, 0.0);
     let ray_direction = (wall_point - ray_origin).normalize();
-    let ray = Ray::new(ray_origin, ray_direction);
 
-    ray
+    Ray::new(ray_origin, ray_direction)
   }
 }
 

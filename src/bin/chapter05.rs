@@ -21,7 +21,7 @@ fn main() {
 
   let yellow = Color::new(1.0, 1.0, 0.0);
 
-  let sphere = Sphere::new(None);
+  let sphere = Sphere::default();
 
   let canvas_mutex = Mutex::new(Canvas::new(canvas_size, canvas_size));
 

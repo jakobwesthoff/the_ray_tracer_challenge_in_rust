@@ -65,8 +65,8 @@ mod tests {
       specular: 0.2,
       ..Phong::default()
     };
-    let s1 = Body::from(Sphere::with_material(Material::from(material), None));
-    let s2 = Body::from(Sphere::new(Some(Matrix::scaling(0.5, 0.5, 0.5))));
+    let s1 = Body::from(Sphere::default().with_material(Material::from(material)));
+    let s2 = Body::from(Sphere::default().with_transform(Matrix::scaling(0.5, 0.5, 0.5)));
 
     World::new(vec![s1, s2], vec![light])
   }
@@ -80,8 +80,8 @@ mod tests {
       specular: 0.2,
       ..Phong::default()
     };
-    let s1 = Body::from(Sphere::with_material(Material::from(material), None));
-    let s2 = Body::from(Sphere::new(Some(Matrix::scaling(0.5, 0.5, 0.5))));
+    let s1 = Body::from(Sphere::default().with_material(Material::from(material)));
+    let s2 = Body::from(Sphere::default().with_transform(Matrix::scaling(0.5, 0.5, 0.5)));
 
     let world = create_default_world();
 

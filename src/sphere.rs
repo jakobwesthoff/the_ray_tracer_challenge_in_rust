@@ -11,26 +11,31 @@ pub struct Sphere {
   pub material: Material,
 }
 
+impl Default for Sphere {
+  fn default() -> Self {
+    Self {
+      transform: Matrix::identity(),
+      material: Default::default(),
+    }
+  }
+}
+
 impl Sphere {
-  pub fn new(transform: Option<Matrix<4>>) -> Self {
-    match transform {
-      None => Sphere {
-        transform: Matrix::identity(),
-        material: Material::default(),
-      },
-      Some(transform) => Sphere {
-        transform,
-        material: Material::default(),
-      },
+  pub fn new(material: Material, transform: Matrix<4>) -> Self {
+    Sphere {
+      material,
+      transform,
     }
   }
 
-  pub fn with_material(material: Material, transform: Option<Matrix<4>>) -> Self {
-    // @TODO: Find a better way to reuse the code here, without changing all
-    // current invocations
-    let mut s = Self::new(transform);
-    s.material = material;
-    s
+  pub fn with_material(mut self, material: Material) -> Self {
+    self.material = material;
+    self
+  }
+
+  pub fn with_transform(mut self, transform: Matrix<4>) -> Self {
+    self.transform = transform;
+    self
   }
 }
 
@@ -83,7 +88,7 @@ mod tests {
   #[test]
   fn a_ray_intersects_a_sphere_at_two_points() {
     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let xs = s.intersect(r);
 
@@ -95,7 +100,7 @@ mod tests {
   #[test]
   fn a_ray_intersects_a_sphere_at_a_tangent() {
     let r = Ray::new(Tuple::point(0.0, 1.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let xs = s.intersect(r);
 
@@ -107,7 +112,7 @@ mod tests {
   #[test]
   fn a_ray_misses_a_sphere() {
     let r = Ray::new(Tuple::point(0.0, 2.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let xs = s.intersect(r);
 
@@ -117,7 +122,7 @@ mod tests {
   #[test]
   fn a_ray_originates_inside_a_sphere() {
     let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let xs = s.intersect(r);
 
@@ -129,7 +134,7 @@ mod tests {
   #[test]
   fn a_sphere_is_behind_a_ray() {
     let r = Ray::new(Tuple::point(0.0, 0.0, 5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let xs = s.intersect(r);
 
@@ -140,13 +145,13 @@ mod tests {
 
   #[test]
   fn a_spheres_default_transform() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     assert_fuzzy_eq!(s.transform, Matrix::identity());
   }
 
   #[test]
   fn changing_a_spheres_transform() {
-    let mut s = Sphere::new(None);
+    let mut s = Sphere::default();
     let m = Matrix::translation(2.0, 3.0, 4.0);
     s.transform = m;
 
@@ -156,7 +161,7 @@ mod tests {
   #[test]
   fn intersecting_a_scaled_sphere_with_a_ray() {
     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(Some(Matrix::scaling(2.0, 2.0, 2.0)));
+    let s = Sphere::default().with_transform(Matrix::scaling(2.0, 2.0, 2.0));
 
     let xs = s.intersect(r);
 
@@ -168,7 +173,7 @@ mod tests {
   #[test]
   fn intersecting_a_translated_sphere_with_a_ray() {
     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let s = Sphere::new(Some(Matrix::translation(5.0, 0.0, 0.0)));
+    let s = Sphere::default().with_transform(Matrix::translation(5.0, 0.0, 0.0));
 
     let xs = s.intersect(r);
 
@@ -177,7 +182,7 @@ mod tests {
 
   #[test]
   fn the_normal_on_a_sphere_at_a_point_on_the_x_axis() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let n = s.normal_at(Tuple::point(1.0, 0.0, 0.0));
 
     let expected_result = Tuple::vector(1.0, 0.0, 0.0);
@@ -187,7 +192,7 @@ mod tests {
 
   #[test]
   fn the_normal_on_a_sphere_at_a_point_on_the_y_axis() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let n = s.normal_at(Tuple::point(0.0, 1.0, 0.0));
 
     let expected_result = Tuple::vector(0.0, 1.0, 0.0);
@@ -197,7 +202,7 @@ mod tests {
 
   #[test]
   fn the_normal_on_a_sphere_at_a_point_on_the_z_axis() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let n = s.normal_at(Tuple::point(0.0, 0.0, 1.0));
 
     let expected_result = Tuple::vector(0.0, 0.0, 1.0);
@@ -207,7 +212,7 @@ mod tests {
 
   #[test]
   fn the_normal_on_a_sphere_at_a_non_axial_point() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let sqrt3_over_3 = (3.0 as F).sqrt() / 3.0;
     let p = Tuple::point(sqrt3_over_3, sqrt3_over_3, sqrt3_over_3);
     let n = s.normal_at(p);
@@ -219,7 +224,7 @@ mod tests {
 
   #[test]
   fn computing_the_normal_on_a_translated_sphere() {
-    let s = Sphere::new(Some(Matrix::translation(0.0, 1.0, 0.0)));
+    let s = Sphere::default().with_transform(Matrix::translation(0.0, 1.0, 0.0));
     let p = Tuple::point(0.0, 1.70711, -0.70711);
     let n = s.normal_at(p);
 
@@ -230,9 +235,8 @@ mod tests {
 
   #[test]
   fn computing_the_normal_on_a_scaled_and_rotated_sphere() {
-    let s = Sphere::new(Some(
-      Matrix::scaling(1.0, 0.5, 1.0) * Matrix::rotation_z(PI / 5.0),
-    ));
+    let s = Sphere::default()
+      .with_transform(Matrix::scaling(1.0, 0.5, 1.0) * Matrix::rotation_z(PI / 5.0));
     let sqrt2_over_2 = (2.0 as F).sqrt() / 2.0;
     let p = Tuple::point(0.0, sqrt2_over_2, -sqrt2_over_2);
     let n = s.normal_at(p);
@@ -244,7 +248,7 @@ mod tests {
 
   #[test]
   fn the_normal_vector_is_always_normalized() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let sqrt3_over_3 = (3.0 as F).sqrt() / 3.0;
     let p = Tuple::point(sqrt3_over_3, sqrt3_over_3, sqrt3_over_3);
     let n = s.normal_at(p);
@@ -254,9 +258,8 @@ mod tests {
 
   #[test]
   fn the_normal_vector_is_normalized_on_transformed_sphere() {
-    let s = Sphere::new(Some(
-      Matrix::scaling(1.0, 0.5, 1.0) * Matrix::rotation_z(PI / 5.0),
-    ));
+    let s = Sphere::default()
+      .with_transform(Matrix::scaling(1.0, 0.5, 1.0) * Matrix::rotation_z(PI / 5.0));
     let sqrt2_over_2 = (2.0 as F).sqrt() / 2.0;
     let p = Tuple::point(0.0, sqrt2_over_2, -sqrt2_over_2);
     let n = s.normal_at(p);
@@ -266,7 +269,7 @@ mod tests {
 
   #[test]
   fn sphere_has_default_phong_material() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
     let m = Material::default();
 
     assert_fuzzy_eq!(s.material, m);
@@ -274,14 +277,9 @@ mod tests {
 
   #[test]
   fn sphere_may_be_assigned_a_material() {
-    let m = Material::from(Phong::new(
-      Color::new(1.0, 1.0, 0.0),
-      0.05,
-      0.7,
-      0.95,
-      400.0,
-    ));
-    let s = Sphere::with_material(m, None);
+    let phong = Phong::new(Color::new(1.0, 1.0, 0.0), 0.05, 0.7, 0.95, 400.0);
+    let m = Material::from(phong);
+    let s = Sphere::default().with_material(m);
 
     assert_fuzzy_eq!(s.material, m);
   }

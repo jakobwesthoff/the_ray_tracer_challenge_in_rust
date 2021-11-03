@@ -28,36 +28,32 @@ fn main() {
     .with_color(Color::new(0.5, 0.45, 0.45))
     .with_specular(0.0);
 
-  let floor_sphere = Sphere::with_material(
+  let floor_sphere = Sphere::new(
     Material::from(floor_and_wall_material),
-    Some(Matrix::scaling(10.0, 0.01, 10.0)),
+    Matrix::scaling(10.0, 0.01, 10.0),
   );
 
-  let left_wall_sphere = Sphere::with_material(
+  let left_wall_sphere = Sphere::new(
     Material::from(floor_and_wall_material),
-    Some(
-      Matrix::translation(0.0, 0.0, 5.0)
-        * Matrix::rotation_y(-PI / 4.0)
-        * Matrix::rotation_x(PI / 2.0)
-        * Matrix::scaling(10.0, 0.01, 10.0),
-    ),
+    Matrix::translation(0.0, 0.0, 5.0)
+      * Matrix::rotation_y(-PI / 4.0)
+      * Matrix::rotation_x(PI / 2.0)
+      * Matrix::scaling(10.0, 0.01, 10.0),
   );
 
-  let right_wall_sphere = Sphere::with_material(
+  let right_wall_sphere = Sphere::new(
     Material::from(floor_and_wall_material),
-    Some(
-      Matrix::translation(0.0, 0.0, 5.0)
-        * Matrix::rotation_y(PI / 4.0)
-        * Matrix::rotation_x(PI / 2.0)
-        * Matrix::scaling(10.0, 0.01, 10.0),
-    ),
+    Matrix::translation(0.0, 0.0, 5.0)
+      * Matrix::rotation_y(PI / 4.0)
+      * Matrix::rotation_x(PI / 2.0)
+      * Matrix::scaling(10.0, 0.01, 10.0),
   );
 
   // Spheres
   let left_material = Phong::default().with_color(Color::new(0.78, 0.28, 0.96));
-  let left_sphere = Sphere::with_material(
+  let left_sphere = Sphere::new(
     Material::from(left_material),
-    Some(Matrix::translation(-1.5, 0.33, -0.75) * Matrix::scaling(0.33, 0.33, 0.33)),
+    Matrix::translation(-1.5, 0.33, -0.75) * Matrix::scaling(0.33, 0.33, 0.33),
   );
 
   let middle_material = Phong::default()
@@ -66,15 +62,15 @@ fn main() {
     .with_specular(0.1)
     .with_shininess(50.0);
 
-  let middle_sphere = Sphere::with_material(
+  let middle_sphere = Sphere::new(
     Material::from(middle_material),
-    Some(Matrix::translation(-0.5, 1.0, 0.5)),
+    Matrix::translation(-0.5, 1.0, 0.5),
   );
 
   let right_material = Phong::default().with_color(Color::new(0.51, 0.75, 0.06));
-  let right_sphere = Sphere::with_material(
+  let right_sphere = Sphere::new(
     Material::from(right_material),
-    Some(Matrix::translation(1.5, 0.5, -0.5) * Matrix::scaling(0.5, 0.5, 0.5)),
+    Matrix::translation(1.5, 0.5, -0.5) * Matrix::scaling(0.5, 0.5, 0.5),
   );
 
   let world = World::new(

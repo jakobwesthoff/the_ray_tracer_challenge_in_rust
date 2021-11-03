@@ -93,7 +93,7 @@ mod tests {
 
   #[test]
   fn the_hit_when_all_intersections_have_positive_t() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let r = Ray::new(Tuple::point(1.0, 1.0, 1.0), Tuple::vector(0.0, 0.0, 1.0));
 
@@ -107,7 +107,7 @@ mod tests {
 
   #[test]
   fn the_hit_when_some_intersections_have_negative_t() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let r = Ray::new(Tuple::point(1.0, 1.0, 1.0), Tuple::vector(0.0, 0.0, 1.0));
 
@@ -121,7 +121,7 @@ mod tests {
 
   #[test]
   fn the_hit_when_all_intersections_have_negative_t() {
-    let s = Sphere::new(None);
+    let s = Sphere::default();
 
     let r = Ray::new(Tuple::point(1.0, 1.0, 1.0), Tuple::vector(0.0, 0.0, 1.0));
 
@@ -136,7 +136,7 @@ mod tests {
   #[test]
   fn precomputing_the_state_of_an_intersection() {
     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let body = Body::from(Sphere::new(None));
+    let body = Body::from(Sphere::default());
     let i = Intersection::new(4.0, r, body);
     let c = i.get_computed();
 
@@ -149,7 +149,7 @@ mod tests {
   #[test]
   fn the_hit_when_an_intersection_occurs_on_the_outside() {
     let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
-    let body = Body::from(Sphere::new(None));
+    let body = Body::from(Sphere::default());
     let i = Intersection::new(4.0, r, body);
     let c = i.get_computed();
 
@@ -159,7 +159,7 @@ mod tests {
   #[test]
   fn the_hit_when_an_intersection_occurs_on_the_inside() {
     let r = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
-    let body = Body::from(Sphere::new(None));
+    let body = Body::from(Sphere::default());
     let i = Intersection::new(1.0, r, body);
     let c = i.get_computed();
 

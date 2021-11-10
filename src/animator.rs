@@ -1,6 +1,3 @@
-use core::slice;
-use std::cmp::min;
-
 use crate::F;
 
 pub struct LinearScale {
@@ -66,10 +63,16 @@ impl LinearScale {
       slice_normalized_input * (self.range[slice_index + 1] - self.range[slice_index]).abs();
 
     if self.range[slice_index] > self.range[slice_index + 1] {
-      return self.range[slice_index] - offseted_output;
+      self.range[slice_index] - offseted_output
     } else {
-      return self.range[slice_index] + offseted_output;
+      self.range[slice_index] + offseted_output
     }
+  }
+}
+
+impl Default for LinearScale {
+  fn default() -> Self {
+    Self::new()
   }
 }
 

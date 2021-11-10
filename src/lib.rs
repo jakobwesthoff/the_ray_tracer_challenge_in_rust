@@ -15,3 +15,4 @@ pub mod material;
 pub mod world;
 pub mod computed_intersection;
 pub mod camera;
+pub mod animator;

@@ -5,7 +5,7 @@ use crate::tuple::Tuple;
 use crate::F;
 
 pub trait Illuminated {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple) -> Color;
+  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -37,9 +37,9 @@ impl FuzzyEq<Material> for Material {
 }
 
 impl Illuminated for Material {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple) -> Color {
+  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color {
     match *self {
-      Material::Phong(ref m) => m.lighting(light, position, eyev, normalv),
+      Material::Phong(ref m) => m.lighting(light, position, eyev, normalv, in_shadow),
     }
   }
 }
@@ -114,7 +114,7 @@ impl FuzzyEq<Phong> for Phong {
 }
 
 impl Illuminated for Phong {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple) -> Color {
+  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color {
     let ambient_light: Color;
     let diffuse_light: Color;
     let specular_light: Color;
@@ -123,6 +123,10 @@ impl Illuminated for Phong {
     let lightv = (light.position - position).normalize();
 
     ambient_light = effective_color * self.ambient;
+
+    if in_shadow {
+      return ambient_light;
+    }
 
     let light_dot_normal = lightv.dot(normalv);
     if light_dot_normal < 0.0 {
@@ -211,7 +215,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv);
+    let actual_result = m.lighting(light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.9, 1.9, 1.9);
 
@@ -228,7 +232,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv);
+    let actual_result = m.lighting(light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.0, 1.0, 1.0);
 
@@ -244,7 +248,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv);
+    let actual_result = m.lighting(light, position, eyev, normalv, false);
 
     let expected_result = Color::new(0.7364, 0.7364, 0.7364);
 
@@ -261,7 +265,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv);
+    let actual_result = m.lighting(light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.6364, 1.6364, 1.6364);
 
@@ -277,7 +281,23 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, 10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv);
+    let actual_result = m.lighting(light, position, eyev, normalv, false);
+
+    let expected_result = Color::new(0.1, 0.1, 0.1);
+
+    assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn lighting_with_the_surface_in_shadow() {
+    let m = Phong::default();
+    let position = Tuple::point(0.0, 0.0, 0.0);
+
+    let eyev = Tuple::vector(0.0, 0.0, -1.0);
+    let normalv = Tuple::vector(0.0, 0.0, -1.0);
+    let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
+
+    let actual_result = m.lighting(light, position, eyev, normalv, true);
 
     let expected_result = Color::new(0.1, 0.1, 0.1);
 

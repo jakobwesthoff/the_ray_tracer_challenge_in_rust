@@ -58,7 +58,7 @@ fn main() {
           hit
             .body
             .material()
-            .lighting(light, computed.point, computed.eyev, computed.normalv);
+            .lighting(light, computed.point, computed.eyev, computed.normalv, false);
 
         let mut canvas = canvas_mutex.lock().unwrap();
         canvas.write_pixel(x, y, color);

@@ -1,7 +1,7 @@
-use crate::body::*;
 use crate::computed_intersection::ComputedIntersection;
 use crate::ray::Ray;
 use crate::F;
+use crate::{body::*, EPSILON};
 use core::ops::Index;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -26,7 +26,9 @@ impl Intersection {
       normalv = -normalv;
     }
 
-    ComputedIntersection::new(self, position, normalv, eyev, inside)
+    let over_point = position + normalv * EPSILON;
+
+    ComputedIntersection::new(self, position, over_point, normalv, eyev, inside)
   }
 }
 
@@ -87,9 +89,11 @@ impl IntoIterator for Intersections {
 #[cfg(test)]
 mod tests {
   use super::*;
+  use crate::fuzzy_eq::*;
+  use crate::material::Material;
+  use crate::matrix::Matrix;
   use crate::sphere::Sphere;
   use crate::tuple::Tuple;
-  use crate::fuzzy_eq::*;
 
   #[test]
   fn the_hit_when_all_intersections_have_positive_t() {
@@ -165,5 +169,16 @@ mod tests {
 
     assert_eq!(c.inside, true);
     assert_eq!(c.normalv, Tuple::vector(0.0, 0.0, -1.0));
+  }
+
+  #[test]
+  fn the_hit_should_offset_the_point() {
+    let material = Material::default();
+    let r = Ray::new(Tuple::point(0.0, 0.0, -5.0), Tuple::vector(0.0, 0.0, 1.0));
+    let s1 = Sphere::new(material, Matrix::translation(0.0, 0.0, 1.0));
+    let i = Intersection::new(5.0, r, s1.into());
+    let c = i.get_computed();
+    assert!(c.over_point.z < -EPSILON / 2.0);
+    assert!(c.point.z > c.over_point.z);
   }
 }

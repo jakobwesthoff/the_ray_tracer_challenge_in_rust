@@ -1,4 +1,4 @@
-const EPSILON: f64 = 0.00001;
+use crate::EPSILON;
 
 pub trait FuzzyEq<T: Clone> {
   fn fuzzy_eq(&self, other: T) -> bool;

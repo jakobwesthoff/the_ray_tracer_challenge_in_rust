@@ -25,7 +25,7 @@ me](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) an
 - [X] Chapter 05: Ray-Sphere Intersections
 - [X] Chapter 06: Light and Shading
 - [X] Chapter 07: Making a Scene
-- [ ] Chapter 08: Shadows
+- [X] Chapter 08: Shadows
 - [ ] Chapter 09: Planes
 - [ ] Chapter 10: Patterns
 - [ ] Chapter 11: Reflection and Refraction

@@ -204,8 +204,8 @@ mod tests {
     assert_eq!(10, c.width);
     assert_eq!(20, c.height);
 
-    for x in 0..c.width - 1 {
-      for y in 0..c.height - 1 {
+    for x in 0..c.width {
+      for y in 0..c.height {
         assert_fuzzy_eq!(c.pixel_at(x, y), Color::black())
       }
     }

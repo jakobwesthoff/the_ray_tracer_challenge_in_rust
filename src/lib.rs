@@ -11,6 +11,7 @@ pub mod ray;
 pub mod body;
 pub mod intersections;
 pub mod sphere;
+pub mod plane;
 pub mod light;
 pub mod material;
 pub mod world;

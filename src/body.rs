@@ -1,6 +1,7 @@
 use crate::intersections::*;
 use crate::material::Material;
 use crate::matrix::Matrix;
+use crate::plane::Plane;
 use crate::ray::*;
 use crate::sphere::*;
 use crate::tuple::*;
@@ -39,6 +40,7 @@ pub trait Intersectable {
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Body {
   Sphere(Sphere),
+  Plane(Plane),
 }
 
 impl From<Sphere> for Body {
@@ -47,28 +49,38 @@ impl From<Sphere> for Body {
   }
 }
 
+impl From<Plane> for Body {
+  fn from(plane: Plane) -> Self {
+    Body::Plane(plane)
+  }
+}
+
 impl Intersectable for Body {
   fn intersect_in_object_space(&self, object_space_ray: Ray) -> Vec<(F, Body)> {
     match *self {
       Body::Sphere(ref sphere) => sphere.intersect_in_object_space(object_space_ray),
+      Body::Plane(ref plane) => plane.intersect_in_object_space(object_space_ray),
     }
   }
 
   fn normal_at_in_object_space(&self, object_space_point: Tuple) -> Tuple {
     match *self {
       Body::Sphere(ref sphere) => sphere.normal_at_in_object_space(object_space_point),
+      Body::Plane(ref plane) => plane.normal_at_in_object_space(object_space_point),
     }
   }
 
   fn material(&self) -> Material {
     match *self {
       Body::Sphere(ref sphere) => sphere.material(),
+      Body::Plane(ref plane) => plane.material(),
     }
   }
 
   fn transform(&self) -> Matrix<4> {
     match *self {
       Body::Sphere(ref sphere) => sphere.transform(),
+      Body::Plane(ref plane) => plane.transform(),
     }
   }
 }

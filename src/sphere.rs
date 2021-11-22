@@ -1,5 +1,4 @@
 use crate::body::*;
-use crate::intersections::*;
 use crate::material::*;
 use crate::matrix::*;
 use crate::ray::*;
@@ -40,9 +39,7 @@ impl Sphere {
 }
 
 impl Intersectable for Sphere {
-  fn intersect(&self, ray: Ray) -> Intersections {
-    let object_space_ray = ray.transform(self.transform.inverse());
-
+  fn intersect_in_object_space(&self, object_space_ray: Ray) -> Vec<(crate::F, Body)> {
     let sphere_to_ray = object_space_ray.origin - Tuple::point(0.0, 0.0, 0.0);
     let a = object_space_ray.direction.dot(object_space_ray.direction);
     let b = 2.0 * object_space_ray.direction.dot(sphere_to_ray);
@@ -50,30 +47,24 @@ impl Intersectable for Sphere {
     let descriminant = b.powi(2) - 4.0 * a * c;
 
     if descriminant < 0.0 {
-      Intersections::new(vec![])
+      vec![]
     } else {
       let t1 = (-b - descriminant.sqrt()) / (2.0 * a);
       let t2 = (-b + descriminant.sqrt()) / (2.0 * a);
-      Intersections::new(vec![
-        Intersection::new(t1, ray, Body::from(*self)),
-        Intersection::new(t2, ray, Body::from(*self)),
-      ])
+      vec![(t1, Body::from(*self)), (t2, Body::from(*self))]
     }
   }
 
-  fn normal_at(&self, point: Tuple) -> Tuple {
-    let object_point = self.transform.inverse() * point;
-    let object_normal = (object_point - Tuple::point(0.0, 0.0, 0.0)).normalize();
-    let mut world_normal = self.transform.inverse().transpose() * object_normal;
-    // Hack, to ensure we have a clean vector, as due the inverse transpose the
-    // w component could be affected if the transformation matrix included a
-    // translation
-    world_normal.w = 0.0;
-    world_normal.normalize()
+  fn normal_at_in_object_space(&self, object_space_point: Tuple) -> Tuple {
+    (object_space_point - Tuple::point(0.0, 0.0, 0.0)).normalize()
   }
 
   fn material(&self) -> Material {
     self.material
+  }
+
+  fn transform(&self) -> Matrix<4> {
+    self.transform
   }
 }
 

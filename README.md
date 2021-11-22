@@ -26,7 +26,7 @@ me](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) an
 - [X] Chapter 06: Light and Shading
 - [X] Chapter 07: Making a Scene
 - [X] Chapter 08: Shadows
-- [ ] Chapter 09: Planes
+- [X] Chapter 09: Planes
 - [ ] Chapter 10: Patterns
 - [ ] Chapter 11: Reflection and Refraction
 - [ ] Chapter 12: Cubes

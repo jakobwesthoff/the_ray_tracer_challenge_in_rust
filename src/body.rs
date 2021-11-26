@@ -1,3 +1,4 @@
+use crate::fuzzy_eq::FuzzyEq;
 use crate::intersections::*;
 use crate::material::Material;
 use crate::matrix::Matrix;
@@ -85,10 +86,19 @@ impl Intersectable for Body {
   }
 }
 
+impl FuzzyEq<Body> for Body {
+  fn fuzzy_eq(&self, other: Body) -> bool {
+    match (*self, other) {
+      (Body::Sphere(ref sphere), Body::Sphere(ref other)) => sphere.fuzzy_eq(other),
+      (Body::Plane(ref plane), Body::Plane(ref other)) => plane.fuzzy_eq(other),
+      _ => false,
+    }
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::fuzzy_eq::*;
 
   #[test]
   fn an_intersection_encapsulates_t_and_object() {

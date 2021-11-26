@@ -1,4 +1,5 @@
 use crate::canvas::Color;
+use crate::fuzzy_eq::FuzzyEq;
 use crate::tuple::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -16,10 +17,15 @@ impl PointLight {
   }
 }
 
+impl FuzzyEq<PointLight> for PointLight {
+  fn fuzzy_eq(&self, other: PointLight) -> bool {
+    self.position.fuzzy_eq(other.position) && self.intensity.fuzzy_eq(self.intensity)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::fuzzy_eq::*;
 
   #[test]
   fn a_point_light_has_a_position_and_intensity() {

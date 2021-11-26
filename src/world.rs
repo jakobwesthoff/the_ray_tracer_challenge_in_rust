@@ -1,10 +1,13 @@
 use crate::body::{Body, Intersectable};
 use crate::canvas::Color;
+use crate::fuzzy_eq::FuzzyEq;
 use crate::intersections::Intersections;
 use crate::light::PointLight;
 use crate::material::Illuminated;
 use crate::ray::Ray;
 use crate::tuple::Tuple;
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct World {
   pub bodies: Vec<Body>,
   pub lights: Vec<PointLight>,
@@ -67,6 +70,12 @@ impl Default for World {
       bodies: vec![],
       lights: vec![],
     }
+  }
+}
+
+impl FuzzyEq<World> for World {
+  fn fuzzy_eq(&self, other: World) -> bool {
+    self.bodies.fuzzy_eq(other.bodies) && self.lights.fuzzy_eq(other.lights)
   }
 }
 
@@ -153,7 +162,7 @@ mod tests {
   #[test]
   fn there_is_no_shadow_when_nothing_is_colinear_with_point_and_light() {
     let w = create_default_world();
-    let p = Tuple::point(0.0,10.0,0.0);
+    let p = Tuple::point(0.0, 10.0, 0.0);
     let is_in_shadow = w.is_shadowed(p);
 
     assert_eq!(is_in_shadow, false);
@@ -162,7 +171,7 @@ mod tests {
   #[test]
   fn there_is_shadow_when_an_object_is_between_the_point_and_the_light() {
     let w = create_default_world();
-    let p = Tuple::point(10.0,-10.0,10.0);
+    let p = Tuple::point(10.0, -10.0, 10.0);
     let is_in_shadow = w.is_shadowed(p);
 
     assert_eq!(is_in_shadow, true);
@@ -171,7 +180,7 @@ mod tests {
   #[test]
   fn there_is_no_shadow_when_an_object_is_behind_the_light() {
     let w = create_default_world();
-    let p = Tuple::point(-20.0,20.0,-20.0);
+    let p = Tuple::point(-20.0, 20.0, -20.0);
     let is_in_shadow = w.is_shadowed(p);
 
     assert_eq!(is_in_shadow, false);
@@ -180,7 +189,7 @@ mod tests {
   #[test]
   fn there_is_no_shadow_when_an_object_is_behind_the_point() {
     let w = create_default_world();
-    let p = Tuple::point(-2.0,2.0,-2.0);
+    let p = Tuple::point(-2.0, 2.0, -2.0);
     let is_in_shadow = w.is_shadowed(p);
 
     assert_eq!(is_in_shadow, false);
@@ -191,7 +200,7 @@ mod tests {
     let material = Material::default();
     let s1 = Sphere::new(material, Matrix::identity());
     let s2 = Sphere::new(material, Matrix::translation(0.0, 0.0, 10.0));
-    let light = PointLight::new(Tuple::point(0.0,0.0,-10.0), Color::new(1.0, 1.0, 1.0));
+    let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
     let w = World::new(vec![s1.into(), s2.into()], vec![light]);
 
     let r = Ray::new(Tuple::point(0.0, 0.0, 5.0), Tuple::vector(0.0, 0.0, 1.0));

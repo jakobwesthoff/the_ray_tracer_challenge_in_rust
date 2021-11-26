@@ -54,11 +54,13 @@ fn main() {
 
       if let Some(hit) = hit {
         let computed = hit.get_computed();
-        let color =
-          hit
-            .body
-            .material()
-            .lighting(light, computed.point, computed.eyev, computed.normalv, false);
+        let color = hit.body.material().lighting(
+          light,
+          computed.point,
+          computed.eyev,
+          computed.normalv,
+          false,
+        );
 
         let mut canvas = canvas_mutex.lock().unwrap();
         canvas.write_pixel(x, y, color);

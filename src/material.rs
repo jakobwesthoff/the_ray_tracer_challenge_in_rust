@@ -5,7 +5,14 @@ use crate::tuple::Tuple;
 use crate::F;
 
 pub trait Illuminated {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color;
+  fn lighting(
+    &self,
+    light: PointLight,
+    position: Tuple,
+    eyev: Tuple,
+    normalv: Tuple,
+    in_shadow: bool,
+  ) -> Color;
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -37,7 +44,14 @@ impl FuzzyEq<Material> for Material {
 }
 
 impl Illuminated for Material {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color {
+  fn lighting(
+    &self,
+    light: PointLight,
+    position: Tuple,
+    eyev: Tuple,
+    normalv: Tuple,
+    in_shadow: bool,
+  ) -> Color {
     match *self {
       Material::Phong(ref m) => m.lighting(light, position, eyev, normalv, in_shadow),
     }
@@ -114,7 +128,14 @@ impl FuzzyEq<Phong> for Phong {
 }
 
 impl Illuminated for Phong {
-  fn lighting(&self, light: PointLight, position: Tuple, eyev: Tuple, normalv: Tuple, in_shadow: bool) -> Color {
+  fn lighting(
+    &self,
+    light: PointLight,
+    position: Tuple,
+    eyev: Tuple,
+    normalv: Tuple,
+    in_shadow: bool,
+  ) -> Color {
     let ambient_light: Color;
     let diffuse_light: Color;
     let specular_light: Color;

@@ -1,6 +1,5 @@
 use itertools::Itertools;
 use rayon::prelude::*;
-use the_ray_tracer_challenge::plane::Plane;
 use std::f64::consts::PI;
 use std::fs::write;
 use std::sync::Mutex;
@@ -11,6 +10,7 @@ use the_ray_tracer_challenge::canvas::*;
 use the_ray_tracer_challenge::light::PointLight;
 use the_ray_tracer_challenge::material::{Material, Phong};
 use the_ray_tracer_challenge::matrix::Matrix;
+use the_ray_tracer_challenge::plane::Plane;
 use the_ray_tracer_challenge::sphere::*;
 use the_ray_tracer_challenge::tuple::*;
 use the_ray_tracer_challenge::world::World;
@@ -29,9 +29,7 @@ fn main() {
     .with_color(Color::new(0.5, 0.45, 0.45))
     .with_specular(0.0);
 
-  let floor = Plane::default().with_material(
-    Material::from(floor_material),
-  );
+  let floor = Plane::default().with_material(Material::from(floor_material));
 
   // Spheres
   let left_material = Phong::default().with_color(Color::new(0.78, 0.28, 0.96));

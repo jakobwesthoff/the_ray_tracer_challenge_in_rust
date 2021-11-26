@@ -33,14 +33,13 @@ fn main() {
 
     let floor_scale = frame.linear_scale().with_range(vec![0.0, 2.0, 0.0]);
     let movement_y = floor_scale.scale(frame.current_as_float());
-    let floor = Plane::default()
-      .with_material(Material::from(floor_material));
+    let floor = Plane::default().with_material(Material::from(floor_material));
 
     // Spheres
     let left_material = Phong::default().with_color(Color::new(0.78, 0.28, 0.96));
     let left_sphere = Sphere::new(
       Material::from(left_material),
-      Matrix::translation(-1.5, 0.33-movement_y, -0.75) * Matrix::scaling(0.33, 0.33, 0.33),
+      Matrix::translation(-1.5, 0.33 - movement_y, -0.75) * Matrix::scaling(0.33, 0.33, 0.33),
     );
 
     let middle_material = Phong::default()
@@ -51,13 +50,13 @@ fn main() {
 
     let middle_sphere = Sphere::new(
       Material::from(middle_material),
-      Matrix::translation(-0.5, 1.0-movement_y, 0.5),
+      Matrix::translation(-0.5, 1.0 - movement_y, 0.5),
     );
 
     let right_material = Phong::default().with_color(Color::new(0.51, 0.75, 0.06));
     let right_sphere = Sphere::new(
       Material::from(right_material),
-      Matrix::translation(1.5, 0.5-movement_y, -0.5) * Matrix::scaling(0.5, 0.5, 0.5),
+      Matrix::translation(1.5, 0.5 - movement_y, -0.5) * Matrix::scaling(0.5, 0.5, 0.5),
     );
 
     let world = World::new(

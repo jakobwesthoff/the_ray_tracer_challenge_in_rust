@@ -155,5 +155,4 @@ mod tests {
     let c = Camera::new(125, 200, PI / 2.0);
     assert_fuzzy_eq!(c.pixel_size, 0.01);
   }
-
 }

@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::EPSILON;
 
 pub trait FuzzyEq<T: Clone> {
@@ -30,7 +32,45 @@ where
       }
     }
 
-    return true;
+    true
+  }
+}
+
+impl<T, U> FuzzyEq<HashMap<T, U>> for HashMap<T, U>
+where
+  T: FuzzyEq<T> + std::cmp::Eq + std::hash::Hash,
+  U: FuzzyEq<U>,
+  T: Clone,
+  U: Clone,
+{
+  fn fuzzy_eq(&self, other: HashMap<T, U>) -> bool {
+    if self.len() != other.len() {
+      return false;
+    }
+
+    for (key, value) in self.iter() {
+      if !other.contains_key(key) {
+        return false;
+      }
+
+      if value.fuzzy_ne(other.get(key).unwrap().clone()) {
+        return false;
+      }
+    }
+
+    true
+  }
+}
+
+impl FuzzyEq<&String> for String {
+  fn fuzzy_eq(&self, other: &String) -> bool {
+    self.eq(other)
+  }
+}
+
+impl FuzzyEq<String> for String {
+  fn fuzzy_eq(&self, other: String) -> bool {
+    self.eq(&other)
   }
 }
 

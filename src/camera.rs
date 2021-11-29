@@ -1,8 +1,10 @@
+use crate::fuzzy_eq::FuzzyEq;
 use crate::matrix::Matrix;
 use crate::ray::Ray;
 use crate::tuple::Tuple;
 use crate::F;
 
+#[derive(Clone, Debug)]
 pub struct Camera {
   pub transform: Matrix<4>,
   pub vsize: usize,
@@ -68,10 +70,18 @@ impl Camera {
   }
 }
 
+impl FuzzyEq<Camera> for Camera {
+  fn fuzzy_eq(&self, other: Camera) -> bool {
+    self.transform.fuzzy_eq(other.transform)
+      && self.vsize == other.vsize
+      && self.hsize == other.hsize
+      && self.field_of_view.fuzzy_eq(other.field_of_view)
+  }
+}
+
 #[cfg(test)]
 mod tests {
   use super::*;
-  use crate::fuzzy_eq::*;
   use std::f64::consts::PI;
 
   #[test]

@@ -214,7 +214,7 @@ macro_rules! to_hash {
   };
 }
 
-macro_rules! with_state {
+macro_rules! with_path {
   ($state:ident, $segment:expr, $op:expr) => {{
     $state.path.push($segment);
     let (mut state, return_value) = $op?;
@@ -260,7 +260,7 @@ impl Yaml {
   ) -> ParserResult<(World, HashMap<String, Camera>)> {
     state.path.push(Segment::Key("".into()));
     for (index, document) in documents_array.iter().enumerate() {
-      let result = with_state!(
+      let result = with_path!(
         state,
         Segment::Index(index),
         self.visit_document(state, document)
@@ -282,7 +282,7 @@ impl Yaml {
     state.path.push(Segment::Key("root".into()));
     let (mut state, document_array) = to_array!(state, document)?;
     for (index, item) in document_array.iter().enumerate() {
-      let result = with_state!(state, Segment::Index(index), self.visit_item(state, item));
+      let result = with_path!(state, Segment::Index(index), self.visit_item(state, item));
       state = result.0;
     }
     state.path.pop();
@@ -293,7 +293,7 @@ impl Yaml {
     let (mut state, item_hash) = to_hash!(state, item)?;
     if item_hash.contains_key(key!("light")) {
       let (mut new_state, light_value) = safe_key!(state, item_hash, "light")?;
-      let (mut new_state, light) = with_state!(
+      let (mut new_state, light) = with_path!(
         new_state,
         Segment::Key("light".into()),
         self.visit_light(new_state, light_value)
@@ -302,7 +302,7 @@ impl Yaml {
       state = new_state;
     } else if item_hash.contains_key(key!("body")) {
       let (mut new_state, body_value) = safe_key!(state, item_hash, "body")?;
-      let (mut new_state, body) = with_state!(
+      let (mut new_state, body) = with_path!(
         new_state,
         Segment::Key("body".into()),
         self.visit_body(new_state, body_value)
@@ -311,7 +311,7 @@ impl Yaml {
       state = new_state;
     } else if item_hash.contains_key(key!("camera")) {
       let (mut new_state, camera_value) = safe_key!(state, item_hash, "camera")?;
-      let (mut new_state, (name, camera)) = with_state!(
+      let (mut new_state, (name, camera)) = with_path!(
         new_state,
         Segment::Key("camera".into()),
         self.visit_camera(new_state, camera_value)
@@ -324,7 +324,7 @@ impl Yaml {
 
   fn visit_light(&self, state: ParserState, light: &yaml::Yaml) -> ParserResult<PointLight> {
     let (mut state, light_hash) = to_hash!(state, light)?;
-    let (state, light_type) = with_state!(
+    let (state, light_type) = with_path!(
       state,
       Segment::Key("type".into()),
       to_string!(state, light_hash, "type")
@@ -332,13 +332,13 @@ impl Yaml {
 
     if light_type.eq("point_light") {
       let (mut state, light_at_value) = safe_key!(state, light_hash, "at")?;
-      let (state, light_at) = with_state!(
+      let (state, light_at) = with_path!(
         state,
         Segment::Key("at".into()),
         self.visit_point(state, light_at_value)
       );
       let (mut state, light_intensity_value) = safe_key!(state, light_hash, "intensity")?;
-      let (state, light_intensity) = with_state!(
+      let (state, light_intensity) = with_path!(
         state,
         Segment::Key("intensity".into()),
         self.visit_color(state, light_intensity_value)
@@ -355,33 +355,33 @@ impl Yaml {
   fn visit_point(&self, state: ParserState, point: &yaml::Yaml) -> ParserResult<Tuple> {
     let (state, point_array) = to_array!(state, point)?;
     let (mut state, x_value) = safe_index!(state, point_array, 0)?;
-    let (state, x) = with_state!(state, Segment::Index(0), to_float!(state, x_value));
+    let (state, x) = with_path!(state, Segment::Index(0), to_float!(state, x_value));
     let (mut state, y_value) = safe_index!(state, point_array, 1)?;
-    let (state, y) = with_state!(state, Segment::Index(1), to_float!(state, y_value));
+    let (state, y) = with_path!(state, Segment::Index(1), to_float!(state, y_value));
     let (mut state, z_value) = safe_index!(state, point_array, 2)?;
-    let (state, z) = with_state!(state, Segment::Index(2), to_float!(state, z_value));
+    let (state, z) = with_path!(state, Segment::Index(2), to_float!(state, z_value));
     Ok((state, Tuple::point(x, y, z)))
   }
 
   fn visit_vector(&self, state: ParserState, vector: &yaml::Yaml) -> ParserResult<Tuple> {
     let (state, vector_array) = to_array!(state, vector)?;
     let (mut state, x_value) = safe_index!(state, vector_array, 0)?;
-    let (state, x) = with_state!(state, Segment::Index(0), to_float!(state, x_value));
+    let (state, x) = with_path!(state, Segment::Index(0), to_float!(state, x_value));
     let (mut state, y_value) = safe_index!(state, vector_array, 1)?;
-    let (state, y) = with_state!(state, Segment::Index(1), to_float!(state, y_value));
+    let (state, y) = with_path!(state, Segment::Index(1), to_float!(state, y_value));
     let (mut state, z_value) = safe_index!(state, vector_array, 2)?;
-    let (state, z) = with_state!(state, Segment::Index(2), to_float!(state, z_value));
+    let (state, z) = with_path!(state, Segment::Index(2), to_float!(state, z_value));
     Ok((state, Tuple::vector(x, y, z)))
   }
 
   fn visit_color(&self, state: ParserState, color: &yaml::Yaml) -> ParserResult<Color> {
     let (state, color_array) = to_array!(state, color)?;
     let (mut state, r_value) = safe_index!(state, color_array, 0)?;
-    let (state, r) = with_state!(state, Segment::Index(0), to_float!(state, r_value));
+    let (state, r) = with_path!(state, Segment::Index(0), to_float!(state, r_value));
     let (mut state, g_value) = safe_index!(state, color_array, 1)?;
-    let (state, g) = with_state!(state, Segment::Index(1), to_float!(state, g_value));
+    let (state, g) = with_path!(state, Segment::Index(1), to_float!(state, g_value));
     let (mut state, b_value) = safe_index!(state, color_array, 2)?;
-    let (state, b) = with_state!(state, Segment::Index(2), to_float!(state, b_value));
+    let (state, b) = with_path!(state, Segment::Index(2), to_float!(state, b_value));
     Ok((state, Color::new(r, g, b)))
   }
 
@@ -391,7 +391,7 @@ impl Yaml {
 
     let (mut state, body_hash) = to_hash!(state, body)?;
 
-    let (mut state, body_type) = with_state!(
+    let (mut state, body_type) = with_path!(
       state,
       Segment::Key("type".into()),
       to_string!(state, body_hash, "type")
@@ -423,7 +423,7 @@ impl Yaml {
 
   fn visit_material(&self, state: ParserState, material: &yaml::Yaml) -> ParserResult<Material> {
     let (mut state, material_hash) = to_hash!(state, material)?;
-    let (state, material_type) = with_state!(
+    let (state, material_type) = with_path!(
       state,
       Segment::Key("type".into()),
       to_string!(state, material_hash, "type")
@@ -431,31 +431,31 @@ impl Yaml {
 
     if material_type.eq("phong") {
       let (mut state, material_color) = safe_key!(state, material_hash, "color")?;
-      let (state, material_color) = with_state!(
+      let (state, material_color) = with_path!(
         state,
         Segment::Key("color".into()),
         self.visit_color(state, material_color)
       );
       let (mut state, material_diffuse) = safe_key!(state, material_hash, "diffuse")?;
-      let (state, material_diffuse) = with_state!(
+      let (state, material_diffuse) = with_path!(
         state,
         Segment::Key("diffuse".into()),
         to_float!(state, material_diffuse)
       );
       let (mut state, material_ambient) = safe_key!(state, material_hash, "ambient")?;
-      let (state, material_ambient) = with_state!(
+      let (state, material_ambient) = with_path!(
         state,
         Segment::Key("ambient".into()),
         to_float!(state, material_ambient)
       );
       let (mut state, material_specular) = safe_key!(state, material_hash, "specular")?;
-      let (state, material_specular) = with_state!(
+      let (state, material_specular) = with_path!(
         state,
         Segment::Key("specular".into()),
         to_float!(state, material_specular)
       );
       let (mut state, material_shininess) = safe_key!(state, material_hash, "shininess")?;
-      let (state, material_shininess) = with_state!(
+      let (state, material_shininess) = with_path!(
         state,
         Segment::Key("shininess".into()),
         to_float!(state, material_shininess)
@@ -501,7 +501,7 @@ impl Yaml {
 
   fn visit_transform(&self, state: ParserState, transform: &yaml::Yaml) -> ParserResult<Matrix<4>> {
     let (mut state, transform_hash) = to_hash!(state, transform)?;
-    let (state, transform_type) = with_state!(
+    let (state, transform_type) = with_path!(
       state,
       Segment::Key("type".into()),
       to_string!(state, transform_hash, "type")
@@ -541,40 +541,40 @@ impl Yaml {
     camera: &yaml::Yaml,
   ) -> ParserResult<(String, Camera)> {
     let (mut state, camera_hash) = to_hash!(state, camera)?;
-    let (mut state, camera_name) = with_state!(
+    let (mut state, camera_name) = with_path!(
       state,
       Segment::Key("name".into()),
       to_string!(state, camera_hash, "name")
     );
-    let (mut state, width) = with_state!(
+    let (mut state, width) = with_path!(
       state,
       Segment::Key("width".into()),
       to_int!(state, camera_hash, "width")
     );
-    let (mut state, height) = with_state!(
+    let (mut state, height) = with_path!(
       state,
       Segment::Key("height".into()),
       to_int!(state, camera_hash, "height")
     );
-    let (state, fov) = with_state!(
+    let (state, fov) = with_path!(
       state,
       Segment::Key("fov".into()),
       to_float!(state, camera_hash, "field_of_view")
     );
     let (mut state, to_value) = safe_key!(state, camera_hash, "to")?;
-    let (state, to) = with_state!(
+    let (state, to) = with_path!(
       state,
       Segment::Key("to".into()),
       self.visit_point(state, to_value)
     );
     let (mut state, from_value) = safe_key!(state, camera_hash, "from")?;
-    let (state, from) = with_state!(
+    let (state, from) = with_path!(
       state,
       Segment::Key("from".into()),
       self.visit_point(state, from_value)
     );
     let (mut state, up_value) = safe_key!(state, camera_hash, "up")?;
-    let (state, up) = with_state!(
+    let (state, up) = with_path!(
       state,
       Segment::Key("up".into()),
       self.visit_vector(state, up_value)

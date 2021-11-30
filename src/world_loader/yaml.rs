@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::error::Error;
 
 use super::{LoaderResult, WorldLoader};
+use anyhow::*;
 use itertools::Itertools;
 use yaml_rust::{yaml, ScanError, YamlLoader};
 
-use crate::F;
 use crate::body::Body;
 use crate::camera::Camera;
 use crate::canvas::Color;
@@ -16,6 +16,7 @@ use crate::plane::Plane;
 use crate::sphere::Sphere;
 use crate::tuple::Tuple;
 use crate::world::World;
+use crate::F;
 
 #[derive(Clone)]
 enum Segment {
@@ -53,42 +54,6 @@ impl ToString for Path {
   }
 }
 
-pub struct ParseError {
-  message: String,
-  path: Path,
-}
-
-impl ParseError {
-  fn new(path: Path, message: String) -> ParseError {
-    ParseError { message, path }
-  }
-}
-
-impl std::fmt::Display for ParseError {
-  fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-    write!(
-      f,
-      "YAML ParseError at {}: {}",
-      self.path.to_string(),
-      self.message
-    )
-  }
-}
-
-impl std::fmt::Debug for ParseError {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    f.debug_struct("ParseError")
-      .field("message", &self.message)
-      .field("path", &self.path.to_string())
-      .finish()
-  }
-}
-
-impl Error for ParseError {
-  fn description(&self) -> &str {
-    self.message.as_str()
-  }
-}
 macro_rules! key {
   ($yaml:expr) => {
     &yaml::Yaml::String($yaml.into())
@@ -103,10 +68,11 @@ fn get_value_from_hash<'a>(
 ) -> ParserResult<&'a yaml::Yaml> {
   let yaml_key = yaml::Yaml::String(key.as_ref().into());
   if !hash.contains_key(&yaml_key) {
-    Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!("Expected to find key {}, but didn't", key.as_ref()),
-    )))
+    Err(anyhow!(
+      "Tried to get value with key {} from hash at {}: Key not found.",
+      key.as_ref(),
+      state.path.to_string()
+    ))
   } else {
     Ok((state, &hash[&yaml_key]))
   }
@@ -119,14 +85,12 @@ fn get_index_from_array<'a>(
   index: usize,
 ) -> ParserResult<&'a yaml::Yaml> {
   if index > array.len() {
-    Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!(
-        "Expected to find index {}, but didn't. The length of the array is only {}.",
-        index,
-        array.len()
-      ),
-    )))
+    Err(anyhow!(
+      "Tried to get value with index {} from hash at {}: Index not found (Array length = {}).",
+      index,
+      state.path.to_string(),
+      array.len()
+    ))
   } else {
     Ok((state, &array[index]))
   }
@@ -136,10 +100,11 @@ fn get_index_from_array<'a>(
 fn value_to_string(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&impl AsRef<str>> {
   match yaml {
     yaml::Yaml::String(content) => Ok((state, content)),
-    _ => Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!("Expected string, got {:?}", yaml),
-    ))),
+    _ => Err(anyhow!(
+      "Expected string value at {}, but found {:?}",
+      state.path.to_string(),
+      yaml
+    )),
   }
 }
 
@@ -157,10 +122,11 @@ fn hash_value_to_string<'a>(
 fn value_to_int(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<i64> {
   match yaml {
     yaml::Yaml::Integer(content) => Ok((state, *content)),
-    _ => Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!("Expected integer, got {:?}", yaml),
-    ))),
+    _ => Err(anyhow!(
+      "Expected integer value at {}, but found {:?}",
+      state.path.to_string(),
+      yaml
+    )),
   }
 }
 
@@ -176,20 +142,22 @@ fn hash_value_to_int(
 
 #[inline(always)]
 fn value_to_float(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<F> {
-    match yaml {
-      yaml::Yaml::Integer(content) => Ok((state, (*content as f64))),
-      yaml::Yaml::Real(_) => match yaml.as_f64() {
-        Some(content) => Ok((state, content)),
-        _ => Err(Box::new(ParseError::new(
-          state.path.clone(),
-          format!("Expected float, got {:?}", yaml),
-        ))),
-      },
-      _ => Err(Box::new(ParseError::new(
-        state.path.clone(),
-        format!("Expected float, got {:?}", yaml),
-      ))),
-    }
+  match yaml {
+    yaml::Yaml::Integer(content) => Ok((state, (*content as f64))),
+    yaml::Yaml::Real(_) => match yaml.as_f64() {
+      Some(content) => Ok((state, content)),
+      _ => Err(anyhow!(
+        "Expected float value at {}, but found {:?}",
+        state.path.to_string(),
+        yaml
+      )),
+    },
+    _ => Err(anyhow!(
+      "Expected float value at {}, but found {:?}",
+      state.path.to_string(),
+      yaml
+    )),
+  }
 }
 
 #[inline(always)]
@@ -206,10 +174,11 @@ fn hash_value_to_float(
 fn value_to_array(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&yaml::Array> {
   match yaml {
     yaml::Yaml::Array(ref content) => Ok((state, content)),
-    _ => Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!("Expected array, got {:?}", yaml),
-    ))),
+    _ => Err(anyhow!(
+      "Expected array at {}, but found {:?}",
+      state.path.to_string(),
+      yaml
+    )),
   }
 }
 
@@ -217,10 +186,11 @@ fn value_to_array(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&yaml::
 fn value_to_hash(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&yaml::Hash> {
   match yaml {
     yaml::Yaml::Hash(ref content) => Ok((state, content)),
-    _ => Err(Box::new(ParseError::new(
-      state.path.clone(),
-      format!("Expected hash, got {:?}", yaml),
-    ))),
+    _ => Err(anyhow!(
+      "Expected hash at {}, but found {:?}",
+      state.path.to_string(),
+      yaml
+    )),
   }
 }
 
@@ -250,7 +220,7 @@ impl ParserState {
   }
 }
 
-type ParserResult<T = ()> = Result<(ParserState, T), Box<dyn Error>>;
+type ParserResult<T = ()> = anyhow::Result<(ParserState, T)>;
 
 #[derive(Default)]
 pub struct Yaml {}
@@ -355,10 +325,11 @@ impl Yaml {
       );
       Ok((state, PointLight::new(light_at, light_intensity)))
     } else {
-      Err(Box::new(ParseError::new(
-        state.path,
-        format!("Found light, with unknown light type {}.", light_type.as_ref()),
-      )))
+      Err(anyhow!(
+        "Unknown light type {} found at {}.",
+        light_type.as_ref(),
+        state.path.to_string()
+      ))
     }
   }
 
@@ -424,10 +395,11 @@ impl Yaml {
     match body_type.as_ref() {
       "sphere" => Ok((state, Body::from(Sphere::new(material, transform)))),
       "plane" => Ok((state, Body::from(Plane::new(material, transform)))),
-      _ => Err(Box::new(ParseError::new(
-        state.path,
-        format!("Unknown body type {} found.", body_type.as_ref()),
-      ))),
+      _ => Err(anyhow!(
+        "Unknown body type {} found at {}.",
+        body_type.as_ref(),
+        state.path.to_string()
+      )),
     }
   }
 
@@ -481,13 +453,11 @@ impl Yaml {
         )),
       ))
     } else {
-      Err(Box::new(ParseError::new(
-        state.path,
-        format!(
-          "Found material, with unknown material type {}.",
-          material_type.as_ref()
-        ),
-      )))
+      Err(anyhow!(
+        "Unknown material type {} found at {}.",
+        material_type.as_ref(),
+        state.path.to_string()
+      ))
     }
   }
 
@@ -535,13 +505,11 @@ impl Yaml {
       let (new_state, radians) = hash_value_to_float(state, transform_hash, "radians")?;
       Ok((new_state, Matrix::rotation_z(radians)))
     } else {
-      Err(Box::new(ParseError::new(
-        state.path,
-        format!(
-          "Found transform, with unknown transform type {}.",
-          transform_type.as_ref()
-        ),
-      )))
+      Err(anyhow!(
+        "Unknown transform type {} found at {}.",
+        transform_type.as_ref(),
+        state.path.to_string()
+      ))
     }
   }
 

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 
 use super::{LoaderResult, WorldLoader};
 use anyhow::*;
@@ -61,11 +60,11 @@ macro_rules! key {
 }
 
 #[inline(always)]
-fn get_value_from_hash<'a>(
+fn get_value_from_hash(
   state: ParserState,
-  hash: &'a yaml::Hash,
+  hash: &yaml::Hash,
   key: impl AsRef<str>,
-) -> ParserResult<&'a yaml::Yaml> {
+) -> ParserResult<&yaml::Yaml> {
   let yaml_key = yaml::Yaml::String(key.as_ref().into());
   if !hash.contains_key(&yaml_key) {
     Err(anyhow!(
@@ -79,11 +78,11 @@ fn get_value_from_hash<'a>(
 }
 
 #[inline(always)]
-fn get_index_from_array<'a>(
+fn get_index_from_array(
   state: ParserState,
-  array: &'a yaml::Array,
+  array: &yaml::Array,
   index: usize,
-) -> ParserResult<&'a yaml::Yaml> {
+) -> ParserResult<&yaml::Yaml> {
   if index > array.len() {
     Err(anyhow!(
       "Tried to get value with index {} from hash at {}: Index not found (Array length = {}).",
@@ -109,11 +108,11 @@ fn value_to_string(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&impl 
 }
 
 #[inline(always)]
-fn hash_value_to_string<'a>(
+fn hash_value_to_string(
   state: ParserState,
-  hash: &'a yaml::Hash,
+  hash: &yaml::Hash,
   key: impl AsRef<str>,
-) -> ParserResult<&'a impl AsRef<str>> {
+) -> ParserResult<&impl AsRef<str>> {
   let (new_state, value) = get_value_from_hash(state, hash, key)?;
   value_to_string(new_state, value)
 }

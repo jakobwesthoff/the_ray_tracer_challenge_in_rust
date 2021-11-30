@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use super::{LoaderResult, WorldLoader};
 use anyhow::*;
 use itertools::Itertools;
-use yaml_rust::{yaml, ScanError, YamlLoader};
+use yaml_rust::{yaml, YamlLoader};
 
 use crate::body::Body;
 use crate::camera::Camera;
@@ -23,7 +23,7 @@ enum Segment {
   Index(usize),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 struct Path(Vec<Segment>);
 
 impl Path {
@@ -33,10 +33,6 @@ impl Path {
 
   pub fn pop(&mut self) {
     self.0.pop();
-  }
-
-  fn new() -> Path {
-    Path(Vec::new())
   }
 }
 
@@ -59,516 +55,424 @@ macro_rules! key {
   };
 }
 
-#[inline(always)]
-fn get_value_from_hash(
-  state: ParserState,
-  hash: &yaml::Hash,
-  key: impl AsRef<str>,
-) -> ParserResult<&yaml::Yaml> {
-  let yaml_key = yaml::Yaml::String(key.as_ref().into());
-  if !hash.contains_key(&yaml_key) {
-    Err(anyhow!(
-      "Tried to get value with key {} from hash at {}: Key not found.",
-      key.as_ref(),
-      state.path.to_string()
-    ))
-  } else {
-    Ok((state, &hash[&yaml_key]))
-  }
-}
-
-#[inline(always)]
-fn get_index_from_array(
-  state: ParserState,
-  array: &yaml::Array,
-  index: usize,
-) -> ParserResult<&yaml::Yaml> {
-  if index > array.len() {
-    Err(anyhow!(
-      "Tried to get value with index {} from hash at {}: Index not found (Array length = {}).",
-      index,
-      state.path.to_string(),
-      array.len()
-    ))
-  } else {
-    Ok((state, &array[index]))
-  }
-}
-
-#[inline(always)]
-fn value_to_string(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&impl AsRef<str>> {
-  match yaml {
-    yaml::Yaml::String(content) => Ok((state, content)),
-    _ => Err(anyhow!(
-      "Expected string value at {}, but found {:?}",
-      state.path.to_string(),
-      yaml
-    )),
-  }
-}
-
-#[inline(always)]
-fn hash_value_to_string(
-  state: ParserState,
-  hash: &yaml::Hash,
-  key: impl AsRef<str>,
-) -> ParserResult<&impl AsRef<str>> {
-  let (new_state, value) = get_value_from_hash(state, hash, key)?;
-  value_to_string(new_state, value)
-}
-
-#[inline(always)]
-fn value_to_int(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<i64> {
-  match yaml {
-    yaml::Yaml::Integer(content) => Ok((state, *content)),
-    _ => Err(anyhow!(
-      "Expected integer value at {}, but found {:?}",
-      state.path.to_string(),
-      yaml
-    )),
-  }
-}
-
-#[inline(always)]
-fn hash_value_to_int(
-  state: ParserState,
-  hash: &yaml::Hash,
-  key: impl AsRef<str>,
-) -> ParserResult<i64> {
-  let (new_state, value) = get_value_from_hash(state, hash, key)?;
-  value_to_int(new_state, value)
-}
-
-#[inline(always)]
-fn value_to_float(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<F> {
-  match yaml {
-    yaml::Yaml::Integer(content) => Ok((state, (*content as f64))),
-    yaml::Yaml::Real(_) => match yaml.as_f64() {
-      Some(content) => Ok((state, content)),
-      _ => Err(anyhow!(
-        "Expected float value at {}, but found {:?}",
-        state.path.to_string(),
-        yaml
-      )),
-    },
-    _ => Err(anyhow!(
-      "Expected float value at {}, but found {:?}",
-      state.path.to_string(),
-      yaml
-    )),
-  }
-}
-
-#[inline(always)]
-fn hash_value_to_float(
-  state: ParserState,
-  hash: &yaml::Hash,
-  key: impl AsRef<str>,
-) -> ParserResult<f64> {
-  let (new_state, value) = get_value_from_hash(state, hash, key)?;
-  value_to_float(new_state, value)
-}
-
-#[inline(always)]
-fn value_to_array(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&yaml::Array> {
-  match yaml {
-    yaml::Yaml::Array(ref content) => Ok((state, content)),
-    _ => Err(anyhow!(
-      "Expected array at {}, but found {:?}",
-      state.path.to_string(),
-      yaml
-    )),
-  }
-}
-
-#[inline(always)]
-fn value_to_hash(state: ParserState, yaml: &yaml::Yaml) -> ParserResult<&yaml::Hash> {
-  match yaml {
-    yaml::Yaml::Hash(ref content) => Ok((state, content)),
-    _ => Err(anyhow!(
-      "Expected hash at {}, but found {:?}",
-      state.path.to_string(),
-      yaml
-    )),
-  }
-}
-
 macro_rules! with_path {
   ($state:ident, $segment:expr, $op:expr) => {{
     $state.path.push($segment);
-    let (mut state, return_value) = $op?;
-    state.path.pop();
-    (state, return_value)
+    let return_value = $op?;
+    $state.path.pop();
+    return_value
   }};
 }
-struct ParserState {
+type ParserResult<T = ()> = anyhow::Result<T>;
+
+#[derive(Default)]
+pub struct YamlParser<'a> {
+  data: &'a str,
   path: Path,
   lights: Vec<PointLight>,
   bodies: Vec<Body>,
   cameras: HashMap<String, Camera>,
 }
-
-impl ParserState {
-  fn new() -> Self {
+impl<'a> YamlParser<'a> {
+  pub fn new(data: &'a str) -> Self {
     Self {
-      path: Path::new(),
+      data,
+      path: Path::default(),
       lights: Vec::new(),
       bodies: Vec::new(),
       cameras: HashMap::new(),
     }
   }
-}
 
-type ParserResult<T = ()> = anyhow::Result<(ParserState, T)>;
-
-#[derive(Default)]
-pub struct Yaml {}
-impl Yaml {
-  pub fn new() -> Self {
-    Self {}
-  }
-
-  fn parse_yaml(&self, source: &str) -> Result<Vec<yaml_rust::Yaml>, ScanError> {
-    YamlLoader::load_from_str(source)
-  }
-
-  fn visit_documents(
+  #[inline(always)]
+  fn get_value_from_hash(
     &self,
-    mut state: ParserState,
-    documents_array: &[yaml_rust::Yaml],
-  ) -> ParserResult<(World, HashMap<String, Camera>)> {
-    state.path.push(Segment::Key("".into()));
-    for (index, document) in documents_array.iter().enumerate() {
-      let result = with_path!(
-        state,
-        Segment::Index(index),
-        self.visit_document(state, document)
-      );
-      state = result.0;
-    }
-    state.path.pop();
-
-    let cameras_clone = state.cameras.clone();
-    let bodies_clone = state.bodies.clone();
-    let lights_clone = state.lights.clone();
-    Ok((
-      state,
-      (World::new(bodies_clone, lights_clone), cameras_clone),
-    ))
-  }
-
-  fn visit_document(&self, mut state: ParserState, document: &yaml_rust::Yaml) -> ParserResult {
-    state.path.push(Segment::Key("root".into()));
-    let (mut state, document_array) = value_to_array(state, document)?;
-    for (index, item) in document_array.iter().enumerate() {
-      let result = with_path!(state, Segment::Index(index), self.visit_item(state, item));
-      state = result.0;
-    }
-    state.path.pop();
-    Ok((state, ()))
-  }
-
-  fn visit_item(&self, state: ParserState, item: &yaml::Yaml) -> ParserResult {
-    let (mut state, item_hash) = value_to_hash(state, item)?;
-    if item_hash.contains_key(key!("light")) {
-      let (mut new_state, light_value) = get_value_from_hash(state, item_hash, "light")?;
-      let (mut new_state, light) = with_path!(
-        new_state,
-        Segment::Key("light".into()),
-        self.visit_light(new_state, light_value)
-      );
-      new_state.lights.push(light);
-      state = new_state;
-    } else if item_hash.contains_key(key!("body")) {
-      let (mut new_state, body_value) = get_value_from_hash(state, item_hash, "body")?;
-      let (mut new_state, body) = with_path!(
-        new_state,
-        Segment::Key("body".into()),
-        self.visit_body(new_state, body_value)
-      );
-      new_state.bodies.push(body);
-      state = new_state;
-    } else if item_hash.contains_key(key!("camera")) {
-      let (mut new_state, camera_value) = get_value_from_hash(state, item_hash, "camera")?;
-      let (mut new_state, (name, camera)) = with_path!(
-        new_state,
-        Segment::Key("camera".into()),
-        self.visit_camera(new_state, camera_value)
-      );
-      new_state.cameras.insert(name, camera);
-      state = new_state;
-    }
-    Ok((state, ()))
-  }
-
-  fn visit_light(&self, state: ParserState, light: &yaml::Yaml) -> ParserResult<PointLight> {
-    let (mut state, light_hash) = value_to_hash(state, light)?;
-    let (state, light_type) = with_path!(
-      state,
-      Segment::Key("type".into()),
-      hash_value_to_string(state, light_hash, "type")
-    );
-
-    if light_type.as_ref() == "point_light" {
-      let (mut state, light_at_value) = get_value_from_hash(state, light_hash, "at")?;
-      let (state, light_at) = with_path!(
-        state,
-        Segment::Key("at".into()),
-        self.visit_point(state, light_at_value)
-      );
-      let (mut state, light_intensity_value) = get_value_from_hash(state, light_hash, "intensity")?;
-      let (state, light_intensity) = with_path!(
-        state,
-        Segment::Key("intensity".into()),
-        self.visit_color(state, light_intensity_value)
-      );
-      Ok((state, PointLight::new(light_at, light_intensity)))
-    } else {
+    hash: &'a yaml::Hash,
+    key: impl AsRef<str>,
+  ) -> ParserResult<&'a yaml::Yaml> {
+    let yaml_key = yaml::Yaml::String(key.as_ref().into());
+    if !hash.contains_key(&yaml_key) {
       Err(anyhow!(
-        "Unknown light type {} found at {}.",
-        light_type.as_ref(),
-        state.path.to_string()
+        "Tried to get value with key {} from hash at {}: Key not found.",
+        key.as_ref(),
+        self.path.to_string()
       ))
+    } else {
+      Ok(&hash[&yaml_key])
     }
   }
 
-  fn visit_point(&self, state: ParserState, point: &yaml::Yaml) -> ParserResult<Tuple> {
-    let (state, point_array) = value_to_array(state, point)?;
-    let (mut state, x_value) = get_index_from_array(state, point_array, 0)?;
-    let (state, x) = with_path!(state, Segment::Index(0), value_to_float(state, x_value));
-    let (mut state, y_value) = get_index_from_array(state, point_array, 1)?;
-    let (state, y) = with_path!(state, Segment::Index(1), value_to_float(state, y_value));
-    let (mut state, z_value) = get_index_from_array(state, point_array, 2)?;
-    let (state, z) = with_path!(state, Segment::Index(2), value_to_float(state, z_value));
-    Ok((state, Tuple::point(x, y, z)))
-  }
-
-  fn visit_vector(&self, state: ParserState, vector: &yaml::Yaml) -> ParserResult<Tuple> {
-    let (state, vector_array) = value_to_array(state, vector)?;
-    let (mut state, x_value) = get_index_from_array(state, vector_array, 0)?;
-    let (state, x) = with_path!(state, Segment::Index(0), value_to_float(state, x_value));
-    let (mut state, y_value) = get_index_from_array(state, vector_array, 1)?;
-    let (state, y) = with_path!(state, Segment::Index(1), value_to_float(state, y_value));
-    let (mut state, z_value) = get_index_from_array(state, vector_array, 2)?;
-    let (state, z) = with_path!(state, Segment::Index(2), value_to_float(state, z_value));
-    Ok((state, Tuple::vector(x, y, z)))
-  }
-
-  fn visit_color(&self, state: ParserState, color: &yaml::Yaml) -> ParserResult<Color> {
-    let (state, color_array) = value_to_array(state, color)?;
-    let (mut state, r_value) = get_index_from_array(state, color_array, 0)?;
-    let (state, r) = with_path!(state, Segment::Index(0), value_to_float(state, r_value));
-    let (mut state, g_value) = get_index_from_array(state, color_array, 1)?;
-    let (state, g) = with_path!(state, Segment::Index(1), value_to_float(state, g_value));
-    let (mut state, b_value) = get_index_from_array(state, color_array, 2)?;
-    let (state, b) = with_path!(state, Segment::Index(2), value_to_float(state, b_value));
-    Ok((state, Color::new(r, g, b)))
-  }
-
-  fn visit_body(&self, state: ParserState, body: &yaml::Yaml) -> ParserResult<Body> {
-    let mut material = Material::default();
-    let mut transform = Matrix::identity();
-
-    let (mut state, body_hash) = value_to_hash(state, body)?;
-
-    let (mut state, body_type) = with_path!(
-      state,
-      Segment::Key("type".into()),
-      hash_value_to_string(state, body_hash, "type")
-    );
-
-    if body_hash.contains_key(key!("material")) {
-      let (new_state, material_value) = get_value_from_hash(state, body_hash, "material")?;
-      let material_result = self.visit_material(new_state, material_value)?;
-      state = material_result.0;
-      material = material_result.1;
+  #[inline(always)]
+  #[allow(clippy::ptr_arg)]
+  fn get_index_from_array(
+    &self,
+    array: &'a yaml::Array,
+    index: usize,
+  ) -> ParserResult<&'a yaml::Yaml> {
+    if index > array.len() {
+      Err(anyhow!(
+        "Tried to get value with index {} from hash at {}: Index not found (Array length = {}).",
+        index,
+        self.path.to_string(),
+        array.len()
+      ))
+    } else {
+      Ok(&array[index])
     }
+  }
 
-    if body_hash.contains_key(key!("transforms")) {
-      let (new_state, transforms_value) = get_value_from_hash(state, body_hash, "transforms")?;
-      let transforms_result = self.visit_transforms(new_state, transforms_value)?;
-      state = transforms_result.0;
-      transform = transforms_result.1;
-    }
-
-    match body_type.as_ref() {
-      "sphere" => Ok((state, Body::from(Sphere::new(material, transform)))),
-      "plane" => Ok((state, Body::from(Plane::new(material, transform)))),
+  #[inline(always)]
+  fn value_to_string(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a impl AsRef<str>> {
+    match yaml {
+      yaml::Yaml::String(content) => Ok(content),
       _ => Err(anyhow!(
-        "Unknown body type {} found at {}.",
-        body_type.as_ref(),
-        state.path.to_string()
+        "Expected string value at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
       )),
     }
   }
 
-  fn visit_material(&self, state: ParserState, material: &yaml::Yaml) -> ParserResult<Material> {
-    let (mut state, material_hash) = value_to_hash(state, material)?;
-    let (state, material_type) = with_path!(
-      state,
+  #[inline(always)]
+  fn hash_value_to_string(
+    &self,
+    hash: &'a yaml::Hash,
+    key: impl AsRef<str>,
+  ) -> ParserResult<&'a impl AsRef<str>> {
+    let value = self.get_value_from_hash(hash, key)?;
+    self.value_to_string(value)
+  }
+
+  #[inline(always)]
+  fn value_to_int(&self, yaml: &yaml::Yaml) -> ParserResult<i64> {
+    match yaml {
+      yaml::Yaml::Integer(content) => Ok(*content),
+      _ => Err(anyhow!(
+        "Expected integer value at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
+      )),
+    }
+  }
+
+  #[inline(always)]
+  fn hash_value_to_int(&self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<i64> {
+    let value = self.get_value_from_hash(hash, key)?;
+    self.value_to_int(value)
+  }
+
+  #[inline(always)]
+  fn value_to_float(&self, yaml: &yaml::Yaml) -> ParserResult<F> {
+    match yaml {
+      yaml::Yaml::Integer(content) => Ok(*content as f64),
+      yaml::Yaml::Real(_) => match yaml.as_f64() {
+        Some(content) => Ok(content),
+        _ => Err(anyhow!(
+          "Expected float value at {}, but found {:?}",
+          self.path.to_string(),
+          yaml
+        )),
+      },
+      _ => Err(anyhow!(
+        "Expected float value at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
+      )),
+    }
+  }
+
+  #[inline(always)]
+  fn hash_value_to_float(&self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<f64> {
+    let value = self.get_value_from_hash(hash, key)?;
+    self.value_to_float(value)
+  }
+
+  #[inline(always)]
+  fn value_to_array(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a yaml::Array> {
+    match yaml {
+      yaml::Yaml::Array(ref content) => Ok(content),
+      _ => Err(anyhow!(
+        "Expected array at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
+      )),
+    }
+  }
+
+  #[inline(always)]
+  fn value_to_hash(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a yaml::Hash> {
+    match yaml {
+      yaml::Yaml::Hash(ref content) => Ok(content),
+      _ => Err(anyhow!(
+        "Expected hash at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
+      )),
+    }
+  }
+
+  pub fn parse_yaml(&mut self) -> LoaderResult {
+    let yaml = YamlLoader::load_from_str(self.data)?;
+    self.visit_documents(&yaml)
+  }
+
+  fn visit_documents(
+    &mut self,
+    documents_array: &[yaml_rust::Yaml],
+  ) -> ParserResult<(World, HashMap<String, Camera>)> {
+    self.path.push(Segment::Key("".into()));
+    for (index, document) in documents_array.iter().enumerate() {
+      with_path!(self, Segment::Index(index), self.visit_document(document));
+    }
+    self.path.pop();
+
+    let cameras_clone = self.cameras.clone();
+    let bodies_clone = self.bodies.clone();
+    let lights_clone = self.lights.clone();
+    Ok((World::new(bodies_clone, lights_clone), cameras_clone))
+  }
+
+  fn visit_document(&mut self, document: &yaml_rust::Yaml) -> ParserResult {
+    self.path.push(Segment::Key("root".into()));
+    let document_array = self.value_to_array(document)?;
+    for (index, item) in document_array.iter().enumerate() {
+      with_path!(self, Segment::Index(index), self.visit_item(item));
+    }
+    self.path.pop();
+    Ok(())
+  }
+
+  fn visit_item(&mut self, item: &yaml::Yaml) -> ParserResult {
+    let item_hash = self.value_to_hash(item)?;
+    if item_hash.contains_key(key!("light")) {
+      let light_value = self.get_value_from_hash(item_hash, "light")?;
+      let light = with_path!(
+        self,
+        Segment::Key("light".into()),
+        self.visit_light(light_value)
+      );
+      self.lights.push(light);
+    } else if item_hash.contains_key(key!("body")) {
+      let body_value = self.get_value_from_hash(item_hash, "body")?;
+      let body = with_path!(
+        self,
+        Segment::Key("body".into()),
+        self.visit_body(body_value)
+      );
+      self.bodies.push(body);
+    } else if item_hash.contains_key(key!("camera")) {
+      let camera_value = self.get_value_from_hash(item_hash, "camera")?;
+      let (name, camera) = with_path!(
+        self,
+        Segment::Key("camera".into()),
+        self.visit_camera(camera_value)
+      );
+      self.cameras.insert(name, camera);
+    }
+    Ok(())
+  }
+
+  fn visit_light(&mut self, light: &yaml::Yaml) -> ParserResult<PointLight> {
+    let light_hash = self.value_to_hash(light)?;
+    let light_type = with_path!(
+      self,
       Segment::Key("type".into()),
-      hash_value_to_string(state, material_hash, "type")
+      self.hash_value_to_string(light_hash, "type")
+    );
+
+    if light_type.as_ref() == "point_light" {
+      let light_at_value = self.get_value_from_hash(light_hash, "at")?;
+      let light_at = with_path!(
+        self,
+        Segment::Key("at".into()),
+        self.visit_point(light_at_value)
+      );
+      let light_intensity_value = self.get_value_from_hash(light_hash, "intensity")?;
+      let light_intensity = with_path!(
+        self,
+        Segment::Key("intensity".into()),
+        self.visit_color(light_intensity_value)
+      );
+      Ok(PointLight::new(light_at, light_intensity))
+    } else {
+      Err(anyhow!(
+        "Unknown light type {} found at {}.",
+        light_type.as_ref(),
+        self.path.to_string()
+      ))
+    }
+  }
+
+  fn visit_point(&mut self, point: &yaml::Yaml) -> ParserResult<Tuple> {
+    let point_array = self.value_to_array(point)?;
+    let x_value = self.get_index_from_array(point_array, 0)?;
+    let x = with_path!(self, Segment::Index(0), self.value_to_float(x_value));
+    let y_value = self.get_index_from_array(point_array, 1)?;
+    let y = with_path!(self, Segment::Index(1), self.value_to_float(y_value));
+    let z_value = self.get_index_from_array(point_array, 2)?;
+    let z = with_path!(self, Segment::Index(2), self.value_to_float(z_value));
+    Ok(Tuple::point(x, y, z))
+  }
+
+  fn visit_vector(&mut self, vector: &yaml::Yaml) -> ParserResult<Tuple> {
+    let vector_array = self.value_to_array(vector)?;
+    let x_value = self.get_index_from_array(vector_array, 0)?;
+    let x = with_path!(self, Segment::Index(0), self.value_to_float(x_value));
+    let y_value = self.get_index_from_array(vector_array, 1)?;
+    let y = with_path!(self, Segment::Index(1), self.value_to_float(y_value));
+    let z_value = self.get_index_from_array(vector_array, 2)?;
+    let z = with_path!(self, Segment::Index(2), self.value_to_float(z_value));
+    Ok(Tuple::vector(x, y, z))
+  }
+
+  fn visit_color(&mut self, color: &yaml::Yaml) -> ParserResult<Color> {
+    let color_array = self.value_to_array(color)?;
+    let r_value = self.get_index_from_array(color_array, 0)?;
+    let r = with_path!(self, Segment::Index(0), self.value_to_float(r_value));
+    let g_value = self.get_index_from_array(color_array, 1)?;
+    let g = with_path!(self, Segment::Index(1), self.value_to_float(g_value));
+    let b_value = self.get_index_from_array(color_array, 2)?;
+    let b = with_path!(self, Segment::Index(2), self.value_to_float(b_value));
+    Ok(Color::new(r, g, b))
+  }
+
+  fn visit_body(&mut self, body: &yaml::Yaml) -> ParserResult<Body> {
+    let mut material = Material::default();
+    let mut transform = Matrix::identity();
+
+    let body_hash = self.value_to_hash(body)?;
+
+    let body_type = with_path!(
+      self,
+      Segment::Key("type".into()),
+      self.hash_value_to_string(body_hash, "type")
+    );
+
+    if body_hash.contains_key(key!("material")) {
+      let material_value = self.get_value_from_hash(body_hash, "material")?;
+      material = self.visit_material(material_value)?;
+    }
+
+    if body_hash.contains_key(key!("transforms")) {
+      let transforms_value = self.get_value_from_hash(body_hash, "transforms")?;
+      transform = self.visit_transforms(transforms_value)?;
+    }
+
+    match body_type.as_ref() {
+      "sphere" => Ok(Body::from(Sphere::new(material, transform))),
+      "plane" => Ok(Body::from(Plane::new(material, transform))),
+      _ => Err(anyhow!(
+        "Unknown body type {} found at {}.",
+        body_type.as_ref(),
+        self.path.to_string()
+      )),
+    }
+  }
+
+  fn visit_material(&mut self, material: &yaml::Yaml) -> ParserResult<Material> {
+    let material_hash = self.value_to_hash(material)?;
+    let material_type = with_path!(
+      self,
+      Segment::Key("type".into()),
+      self.hash_value_to_string(material_hash, "type")
     );
 
     if material_type.as_ref() == "phong" {
-      let (mut state, material_color) = get_value_from_hash(state, material_hash, "color")?;
-      let (state, material_color) = with_path!(
-        state,
+      let material_color = with_path!(
+        self,
         Segment::Key("color".into()),
-        self.visit_color(state, material_color)
+        self.visit_color(self.get_value_from_hash(material_hash, "color")?)
       );
-      let (mut state, material_diffuse) = get_value_from_hash(state, material_hash, "diffuse")?;
-      let (state, material_diffuse) = with_path!(
-        state,
-        Segment::Key("diffuse".into()),
-        value_to_float(state, material_diffuse)
-      );
-      let (mut state, material_ambient) = get_value_from_hash(state, material_hash, "ambient")?;
-      let (state, material_ambient) = with_path!(
-        state,
-        Segment::Key("ambient".into()),
-        value_to_float(state, material_ambient)
-      );
-      let (mut state, material_specular) = get_value_from_hash(state, material_hash, "specular")?;
-      let (state, material_specular) = with_path!(
-        state,
-        Segment::Key("specular".into()),
-        value_to_float(state, material_specular)
-      );
-      let (mut state, material_shininess) = get_value_from_hash(state, material_hash, "shininess")?;
-      let (state, material_shininess) = with_path!(
-        state,
-        Segment::Key("shininess".into()),
-        value_to_float(state, material_shininess)
-      );
-      Ok((
-        state,
-        Material::from(Phong::new(
-          material_color,
-          material_ambient,
-          material_diffuse,
-          material_specular,
-          material_shininess,
-        )),
-      ))
+      let material_diffuse = self.hash_value_to_float(material_hash, "diffuse")?;
+      let material_ambient = self.hash_value_to_float(material_hash, "ambient")?;
+      let material_specular = self.hash_value_to_float(material_hash, "specular")?;
+      let material_shininess = self.hash_value_to_float(material_hash, "shininess")?;
+      Ok(Material::from(Phong::new(
+        material_color,
+        material_ambient,
+        material_diffuse,
+        material_specular,
+        material_shininess,
+      )))
     } else {
       Err(anyhow!(
         "Unknown material type {} found at {}.",
         material_type.as_ref(),
-        state.path.to_string()
+        self.path.to_string()
       ))
     }
   }
 
-  fn visit_transforms(
-    &self,
-    state: ParserState,
-    transforms: &yaml::Yaml,
-  ) -> ParserResult<Matrix<4>> {
-    let (mut state, transforms_array) = value_to_array(state, transforms)?;
+  fn visit_transforms(&mut self, transforms: &yaml::Yaml) -> ParserResult<Matrix<4>> {
+    let transforms_array = self.value_to_array(transforms)?;
     let mut combined_transform = Matrix::identity();
     for (index, transform) in transforms_array.iter().enumerate().rev() {
-      state.path.push(Segment::Index(index));
-      let (new_state, next_transform) = self.visit_transform(state, transform)?;
+      self.path.push(Segment::Index(index));
+      let next_transform = self.visit_transform(transform)?;
       combined_transform = combined_transform * next_transform;
-      state = new_state;
-      state.path.pop();
+      self.path.pop();
     }
 
-    Ok((state, combined_transform))
+    Ok(combined_transform)
   }
 
-  fn visit_transform(&self, state: ParserState, transform: &yaml::Yaml) -> ParserResult<Matrix<4>> {
-    let (mut state, transform_hash) = value_to_hash(state, transform)?;
-    let (state, transform_type) = with_path!(
-      state,
-      Segment::Key("type".into()),
-      hash_value_to_string(state, transform_hash, "type")
-    );
+  fn visit_transform(&mut self, transform: &yaml::Yaml) -> ParserResult<Matrix<4>> {
+    let transform_hash = self.value_to_hash(transform)?;
+    let transform_type = self.hash_value_to_string(transform_hash, "type")?;
 
     if transform_type.as_ref() == "translate" {
-      let (new_state, to) = get_value_from_hash(state, transform_hash, "to")?;
-      let (new_state, v) = self.visit_vector(new_state, to)?;
-      Ok((new_state, Matrix::translation(v.x, v.y, v.z)))
+      let v = self.visit_vector(self.get_value_from_hash(transform_hash, "to")?)?;
+      Ok(Matrix::translation(v.x, v.y, v.z))
     } else if transform_type.as_ref() == "scale" {
-      let (new_state, to) = get_value_from_hash(state, transform_hash, "to")?;
-      let (new_state, v) = self.visit_vector(new_state, to)?;
-      Ok((new_state, Matrix::scaling(v.x, v.y, v.z)))
+      let v = self.visit_vector(self.get_value_from_hash(transform_hash, "to")?)?;
+      Ok(Matrix::scaling(v.x, v.y, v.z))
     } else if transform_type.as_ref() == "rotate_x" {
-      let (new_state, radians) = hash_value_to_float(state, transform_hash, "radians")?;
-      Ok((new_state, Matrix::rotation_x(radians)))
+      let radians = self.hash_value_to_float(transform_hash, "radians")?;
+      Ok(Matrix::rotation_x(radians))
     } else if transform_type.as_ref() == "rotate_y" {
-      let (new_state, radians) = hash_value_to_float(state, transform_hash, "radians")?;
-      Ok((new_state, Matrix::rotation_y(radians)))
+      let radians = self.hash_value_to_float(transform_hash, "radians")?;
+      Ok(Matrix::rotation_y(radians))
     } else if transform_type.as_ref() == "rotate_z" {
-      let (new_state, radians) = hash_value_to_float(state, transform_hash, "radians")?;
-      Ok((new_state, Matrix::rotation_z(radians)))
+      let radians = self.hash_value_to_float(transform_hash, "radians")?;
+      Ok(Matrix::rotation_z(radians))
     } else {
       Err(anyhow!(
         "Unknown transform type {} found at {}.",
         transform_type.as_ref(),
-        state.path.to_string()
+        self.path.to_string()
       ))
     }
   }
 
-  fn visit_camera(
-    &self,
-    state: ParserState,
-    camera: &yaml::Yaml,
-  ) -> ParserResult<(String, Camera)> {
-    let (mut state, camera_hash) = value_to_hash(state, camera)?;
-    let (mut state, camera_name) = with_path!(
-      state,
-      Segment::Key("name".into()),
-      hash_value_to_string(state, camera_hash, "name")
-    );
-    let (mut state, width) = with_path!(
-      state,
-      Segment::Key("width".into()),
-      hash_value_to_int(state, camera_hash, "width")
-    );
-    let (mut state, height) = with_path!(
-      state,
-      Segment::Key("height".into()),
-      hash_value_to_int(state, camera_hash, "height")
-    );
-    let (state, fov) = with_path!(
-      state,
-      Segment::Key("fov".into()),
-      hash_value_to_float(state, camera_hash, "field_of_view")
-    );
-    let (mut state, to_value) = get_value_from_hash(state, camera_hash, "to")?;
-    let (state, to) = with_path!(
-      state,
-      Segment::Key("to".into()),
-      self.visit_point(state, to_value)
-    );
-    let (mut state, from_value) = get_value_from_hash(state, camera_hash, "from")?;
-    let (state, from) = with_path!(
-      state,
+  fn visit_camera(&mut self, camera: &yaml::Yaml) -> ParserResult<(String, Camera)> {
+    let camera_hash = self.value_to_hash(camera)?;
+    let camera_name = self.hash_value_to_string(camera_hash, "name")?;
+    let width = self.hash_value_to_int(camera_hash, "width")?;
+    let height = self.hash_value_to_int(camera_hash, "height")?;
+    let fov = self.hash_value_to_float(camera_hash, "field_of_view")?;
+    let to_value = self.get_value_from_hash(camera_hash, "to")?;
+    let to = with_path!(self, Segment::Key("to".into()), self.visit_point(to_value));
+    let from_value = self.get_value_from_hash(camera_hash, "from")?;
+    let from = with_path!(
+      self,
       Segment::Key("from".into()),
-      self.visit_point(state, from_value)
+      self.visit_point(from_value)
     );
-    let (mut state, up_value) = get_value_from_hash(state, camera_hash, "up")?;
-    let (state, up) = with_path!(
-      state,
-      Segment::Key("up".into()),
-      self.visit_vector(state, up_value)
-    );
+    let up_value = self.get_value_from_hash(camera_hash, "up")?;
+    let up = with_path!(self, Segment::Key("up".into()), self.visit_vector(up_value));
 
     let camera = Camera::new(width.abs() as usize, height.abs() as usize, fov)
       .look_at_from_position(from, to, up);
-    Ok((state, (camera_name.as_ref().into(), camera)))
+    Ok((camera_name.as_ref().into(), camera))
   }
 }
 
+#[derive(Default)]
+pub struct Yaml {}
 impl WorldLoader for Yaml {
   fn load_world(&self, source: &str) -> LoaderResult {
-    let documents = self.parse_yaml(source)?;
-    let state = ParserState::new();
-    let (_, result) = self.visit_documents(state, &documents)?;
-    Ok(result)
+    let mut parser = YamlParser::new(source);
+    parser.parse_yaml()
   }
 }
 
@@ -642,7 +546,7 @@ mod tests {
       ),
     );
 
-    let yaml_loader = Yaml::new();
+    let yaml_loader = Yaml::default();
 
     let (loaded_world, loaded_cameras) = yaml_loader.load_world(source).unwrap();
     assert_fuzzy_eq!(loaded_world, expected_world);

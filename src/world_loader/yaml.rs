@@ -378,22 +378,34 @@ impl<'a> YamlParser<'a> {
     );
 
     if material_type.as_ref() == "phong" {
-      let material_color = with_path!(
-        self,
-        Segment::Key("color".into()),
-        self.visit_color(self.get_value_from_hash(material_hash, "color")?)
-      );
-      let material_diffuse = self.hash_value_to_float(material_hash, "diffuse")?;
-      let material_ambient = self.hash_value_to_float(material_hash, "ambient")?;
-      let material_specular = self.hash_value_to_float(material_hash, "specular")?;
-      let material_shininess = self.hash_value_to_float(material_hash, "shininess")?;
-      Ok(Material::from(Phong::new(
-        material_color,
-        material_ambient,
-        material_diffuse,
-        material_specular,
-        material_shininess,
-      )))
+      let mut phong_material = Phong::default();
+
+      if material_hash.contains_key(key!("color")) {
+        let material_color = with_path!(
+          self,
+          Segment::Key("color".into()),
+          self.visit_color(self.get_value_from_hash(material_hash, "color")?)
+        );
+        phong_material = phong_material.with_color(material_color);
+      }
+      if material_hash.contains_key(key!("diffuse")) {
+        let material_diffuse = self.hash_value_to_float(material_hash, "diffuse")?;
+        phong_material = phong_material.with_diffuse(material_diffuse);
+      }
+      if material_hash.contains_key(key!("ambient")) {
+        let material_ambient = self.hash_value_to_float(material_hash, "ambient")?;
+        phong_material = phong_material.with_ambient(material_ambient);
+      }
+      if material_hash.contains_key(key!("specular")) {
+        let material_specular = self.hash_value_to_float(material_hash, "specular")?;
+        phong_material = phong_material.with_specular(material_specular);
+      }
+      if material_hash.contains_key(key!("shininess")) {
+        let material_shininess = self.hash_value_to_float(material_hash, "shininess")?;
+        phong_material = phong_material.with_shininess(material_shininess);
+      }
+
+      Ok(Material::from(phong_material))
     } else {
       Err(anyhow!(
         "Unknown material type {} found at {}.",

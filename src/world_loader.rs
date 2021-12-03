@@ -5,7 +5,7 @@ use crate::world::World;
 
 pub type LoaderResult = anyhow::Result<(World, HashMap<String, Camera>)>;
 pub trait WorldLoader {
-  fn load_world(&self, source: &str) -> LoaderResult;
+  fn load_world<T: AsRef<str>>(&self, source: T) -> LoaderResult;
 }
 
 pub mod yaml;

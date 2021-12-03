@@ -482,8 +482,8 @@ impl<'a> YamlParser<'a> {
 #[derive(Default)]
 pub struct Yaml {}
 impl WorldLoader for Yaml {
-  fn load_world(&self, source: &str) -> LoaderResult {
-    let mut parser = YamlParser::new(source);
+  fn load_world<T: AsRef<str>>(&self, source: T) -> LoaderResult {
+    let mut parser = YamlParser::new(source.as_ref());
     parser.parse_yaml()
   }
 }

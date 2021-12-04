@@ -564,4 +564,287 @@ mod tests {
     assert_fuzzy_eq!(loaded_world, expected_world);
     assert_fuzzy_eq!(loaded_cameras, expected_cameras);
   }
+
+  #[test]
+  fn load_multiple_cameras() {
+    let source = r##"
+---
+- camera:
+    name: output1
+    width: 800
+    height: 600
+    field_of_view: 0.785 # 45degrees
+    from: [1, 2, 3.4]
+    to: [5.6, 7, 8]
+    up: [9.10, 11, -1.2]
+
+- camera:
+    name: output2
+    width: 1920
+    height: 1080
+    field_of_view: 1.047 # PI/3
+    from: [1, 0.5, -5]
+    to: [0, 1, 0]
+    up: [0, 1, 0]
+
+- light:
+    type: point_light
+    at: [1.1, 2.2, 3.3]
+    intensity: [0.4, 0.5, 0.6]
+
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [1,1,1]
+      diffuse: 0.7
+      ambient: 0.1
+      specular: 0.0
+      shininess: 200
+    transforms:
+      - type: translate
+        to: [1, 2, 3]
+      - type: rotate_x
+        radians: 3.14
+"##;
+
+    let expected_world = World::new(
+      vec![Body::from(Sphere::new(
+        Material::from(Phong::new(Color::new(1.0, 1.0, 1.0), 0.1, 0.7, 0.0, 200.0)),
+        Matrix::rotation_x(3.14) * Matrix::translation(1.0, 2.0, 3.0),
+      ))],
+      vec![PointLight::new(
+        Tuple::point(1.1, 2.2, 3.3),
+        Color::new(0.4, 0.5, 0.6),
+      )],
+    );
+
+    let mut expected_cameras = HashMap::new();
+    expected_cameras.insert(
+      String::from("output1"),
+      Camera::new(800, 600, 0.785).look_at_from_position(
+        Tuple::point(1.0, 2.0, 3.4),
+        Tuple::point(5.6, 7.0, 8.0),
+        Tuple::vector(9.10, 11.0, -1.2),
+      ),
+    );
+    expected_cameras.insert(
+      String::from("output2"),
+      Camera::new(1920, 1080, 1.047).look_at_from_position(
+        Tuple::point(1.0, 0.5, -5.0),
+        Tuple::point(0.0, 1.0, 0.0),
+        Tuple::vector(0.0, 1.0, 0.0),
+      ),
+    );
+
+    let yaml_loader = Loader::default();
+
+    let (loaded_world, loaded_cameras) = yaml_loader.load_world(source).unwrap();
+    assert_fuzzy_eq!(loaded_world, expected_world);
+    assert_fuzzy_eq!(loaded_cameras, expected_cameras);
+  }
+
+  #[test]
+  fn complex_scene_multiple_cameras_multiple_bodies() {
+    let source = r##"
+---
+- light:
+    type: point_light
+    at: [-10, 10, -10]
+    intensity: [1, 1, 1]
+
+# Floor
+- body:
+    type: plane
+    material:
+      type: phong
+      color: [0.5, 0.45, 0.45]
+      specular: 0.0
+
+# Left Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0.635, 0, 1]
+    transforms:
+      - type: scale
+        to: [0.33, 0.33, 0.33]
+      - type: translate
+        to: [-1.5, 0.33, -0.75]
+
+# Middle Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [1, 0, 0.635]
+      diffuse: 0.9
+      specular: 1.8
+    transforms:
+      - type: translate
+        to: [-0.5, 1.0, 0.5]
+
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.635, 1]
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+
+# Camera
+- camera:
+    name: main_camera
+    width: 3840
+    height: 2160
+    field_of_view: 1.047 # PI/3
+    from: [0, 1.5, -5]
+    to: [0, 1, 0]
+    up: [0, 1, 0]
+
+# Camera further moved down
+- camera:
+    name: second_camera
+    width: 1920
+    height: 1080
+    field_of_view: 1.047 # PI/3
+    from: [1, 0.5, -5]
+    to: [0, 1, 0]
+    up: [0, 1, 0]
+
+"##;
+
+    let expected_world = World::new(
+      vec![
+        // # Floor
+        // - body:
+        //     type: plane
+        //     material:
+        //       type: phong
+        //       color: [0.5, 0.45, 0.45]
+        //       specular: 0.0
+        Body::from(
+          Plane::default().with_material(Material::from(
+            Phong::default()
+              .with_color(Color::new(0.5, 0.45, 0.45))
+              .with_specular(0.0),
+          )),
+        ),
+        // # Left Sphere
+        // - body:
+        //     type: sphere
+        //     material:
+        //       type: phong
+        //       color: [0.635, 0, 1]
+        //     transforms:
+        //       - type: scale
+        //         to: [0.33, 0.33, 0.33]
+        //       - type: translate
+        //         to: [-1.5, 0.33, -0.75]
+        Body::from(
+          Sphere::default()
+            .with_material(Material::from(
+              Phong::default().with_color(Color::new(0.635, 0.0, 1.0)),
+            ))
+            .with_transform(
+              Matrix::translation(-1.5, 0.33, -0.75) * Matrix::scaling(0.33, 0.33, 0.33),
+            ),
+        ),
+        // # Middle Sphere
+        // - body:
+        //     type: sphere
+        //     material:
+        //       type: phong
+        //       color: [1, 0, 0.635]
+        //       diffuse: 0.9
+        //       specular: 1.8
+        //     transforms:
+        //       - type: translate
+        //         to: [-0.5, 1.0, 0.5]
+        Body::from(
+          Sphere::default()
+            .with_material(Material::from(
+              Phong::default()
+                .with_color(Color::new(1.0, 0.0, 0.635))
+                .with_diffuse(0.9)
+                .with_specular(1.8),
+            ))
+            .with_transform(Matrix::translation(-0.5, 1.0, 0.5)),
+        ),
+        // # Right Sphere
+        // - body:
+        //     type: sphere
+        //     material:
+        //       type: phong
+        //       color: [0, 0.635, 1]
+        //     transforms:
+        //       - type: scale
+        //         to: [0.5, 0.5, 0.5]
+        //       - type: translate
+        //         to: [1.5, 0.5, -0.5]
+        Body::from(
+          Sphere::default()
+            .with_material(Material::from(
+              Phong::default().with_color(Color::new(0.0, 0.635, 1.0)),
+            ))
+            .with_transform(Matrix::translation(1.5, 0.5, -0.5) * Matrix::scaling(0.5, 0.5, 0.5)),
+        ),
+      ],
+      vec![
+        // - light:
+        //     type: point_light
+        //     at: [-10, 10, -10]
+        //     intensity: [1, 1, 1]
+        PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0)),
+      ],
+    );
+
+    let mut expected_cameras = HashMap::new();
+    // # Camera
+    // - camera:
+    //     name: main_camera
+    //     width: 3840
+    //     height: 2160
+    //     field_of_view: 1.047 # PI/3
+    //     from: [0, 1.5, -5]
+    //     to: [0, 1, 0]
+    //     up: [0, 1, 0]
+    expected_cameras.insert(
+      String::from("main_camera"),
+      Camera::new(3840, 2160, 1.047).look_at_from_position(
+        Tuple::point(0.0, 1.5, -5.0),
+        Tuple::point(0.0, 1.0, 0.0),
+        Tuple::vector(0.0, 1.0, 0.0),
+      ),
+    );
+
+    // # Camera further moved down
+    // - camera:
+    //     name: second_camera
+    //     width: 1920
+    //     height: 1080
+    //     field_of_view: 1.047 # PI/3
+    //     from: [1, 0.5, -5]
+    //     to: [0, 1, 0]
+    //     up: [0, 1, 0]
+    expected_cameras.insert(
+      String::from("second_camera"),
+      Camera::new(1920, 1080, 1.047).look_at_from_position(
+        Tuple::point(1.0, 0.5, -5.0),
+        Tuple::point(0.0, 1.0, 0.0),
+        Tuple::vector(0.0, 1.0, 0.0),
+      ),
+    );
+
+    let yaml_loader = Loader::default();
+
+    let (loaded_world, loaded_cameras) = yaml_loader.load_world(source).unwrap();
+    assert_fuzzy_eq!(loaded_world, expected_world);
+    assert_fuzzy_eq!(loaded_cameras, expected_cameras);
+  }
 }

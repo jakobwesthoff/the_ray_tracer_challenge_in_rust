@@ -55,14 +55,6 @@ macro_rules! key {
   };
 }
 
-macro_rules! with_path {
-  ($state:ident, $segment:expr, $op:expr) => {{
-    $state.path.push($segment);
-    let return_value = $op?;
-    $state.path.pop();
-    return_value
-  }};
-}
 type ParserResult<T = ()> = anyhow::Result<T>;
 
 #[derive(Default)]
@@ -85,15 +77,15 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn get_value_from_hash(
+  fn get_value_from_hash<'b>(
     &self,
-    hash: &'a yaml::Hash,
+    hash: &'b yaml::Hash,
     key: impl AsRef<str>,
-  ) -> ParserResult<&'a yaml::Yaml> {
+  ) -> ParserResult<&'b yaml::Yaml> {
     let yaml_key = yaml::Yaml::String(key.as_ref().into());
     if !hash.contains_key(&yaml_key) {
       Err(anyhow!(
-        "Tried to get value with key {} from hash at {}: Key not found.",
+        "Tried to get value with key '{}' from hash at {}: Key not found.",
         key.as_ref(),
         self.path.to_string()
       ))
@@ -104,14 +96,14 @@ impl<'a> YamlParser<'a> {
 
   #[inline(always)]
   #[allow(clippy::ptr_arg)]
-  fn get_index_from_array(
+  fn get_index_from_array<'b>(
     &self,
-    array: &'a yaml::Array,
+    array: &'b yaml::Array,
     index: usize,
-  ) -> ParserResult<&'a yaml::Yaml> {
+  ) -> ParserResult<&'b yaml::Yaml> {
     if index > array.len() {
       Err(anyhow!(
-        "Tried to get value with index {} from hash at {}: Index not found (Array length = {}).",
+        "Tried to get value with index {} from array at {}: Index not found (Array length = {}).",
         index,
         self.path.to_string(),
         array.len()
@@ -122,7 +114,7 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn value_to_string(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a impl AsRef<str>> {
+  fn value_to_string<'b>(&self, yaml: &'b yaml::Yaml) -> ParserResult<&'b impl AsRef<str>> {
     match yaml {
       yaml::Yaml::String(content) => Ok(content),
       _ => Err(anyhow!(
@@ -134,13 +126,16 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn hash_value_to_string(
-    &self,
-    hash: &'a yaml::Hash,
+  fn hash_value_to_string<'b>(
+    &mut self,
+    hash: &'b yaml::Hash,
     key: impl AsRef<str>,
-  ) -> ParserResult<&'a impl AsRef<str>> {
+  ) -> ParserResult<&'b impl AsRef<str>> {
+    self.path.push(Segment::Key(key.as_ref().into()));
     let value = self.get_value_from_hash(hash, key)?;
-    self.value_to_string(value)
+    let result = self.value_to_string(value);
+    self.path.pop();
+    result
   }
 
   #[inline(always)]
@@ -156,9 +151,12 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn hash_value_to_int(&self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<i64> {
+  fn hash_value_to_int(&mut self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<i64> {
+    self.path.push(Segment::Key(key.as_ref().into()));
     let value = self.get_value_from_hash(hash, key)?;
-    self.value_to_int(value)
+    let result = self.value_to_int(value);
+    self.path.pop();
+    result
   }
 
   #[inline(always)]
@@ -182,13 +180,16 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn hash_value_to_float(&self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<f64> {
+  fn hash_value_to_float(&mut self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<f64> {
+    self.path.push(Segment::Key(key.as_ref().into()));
     let value = self.get_value_from_hash(hash, key)?;
-    self.value_to_float(value)
+    let result = self.value_to_float(value);
+    self.path.pop();
+    result
   }
 
   #[inline(always)]
-  fn value_to_array(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a yaml::Array> {
+  fn value_to_array<'b>(&self, yaml: &'b yaml::Yaml) -> ParserResult<&'b yaml::Array> {
     match yaml {
       yaml::Yaml::Array(ref content) => Ok(content),
       _ => Err(anyhow!(
@@ -200,7 +201,7 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn value_to_hash(&self, yaml: &'a yaml::Yaml) -> ParserResult<&'a yaml::Hash> {
+  fn value_to_hash<'b>(&self, yaml: &'b yaml::Yaml) -> ParserResult<&'b yaml::Hash> {
     match yaml {
       yaml::Yaml::Hash(ref content) => Ok(content),
       _ => Err(anyhow!(
@@ -220,9 +221,11 @@ impl<'a> YamlParser<'a> {
     &mut self,
     documents_array: &[yaml_rust::Yaml],
   ) -> ParserResult<(World, HashMap<String, Camera>)> {
-    self.path.push(Segment::Key("".into()));
+    self.path.push(Segment::Key("document".into()));
     for (index, document) in documents_array.iter().enumerate() {
-      with_path!(self, Segment::Index(index), self.visit_document(document));
+      self.path.push(Segment::Index(index));
+      self.visit_document(document)?;
+      self.path.pop();
     }
     self.path.pop();
 
@@ -233,10 +236,12 @@ impl<'a> YamlParser<'a> {
   }
 
   fn visit_document(&mut self, document: &yaml_rust::Yaml) -> ParserResult {
-    self.path.push(Segment::Key("root".into()));
+    self.path.push(Segment::Key("item".into()));
     let document_array = self.value_to_array(document)?;
     for (index, item) in document_array.iter().enumerate() {
-      with_path!(self, Segment::Index(index), self.visit_item(item));
+      self.path.push(Segment::Index(index));
+      self.visit_item(item)?;
+      self.path.pop();
     }
     self.path.pop();
     Ok(())
@@ -246,57 +251,51 @@ impl<'a> YamlParser<'a> {
     let item_hash = self.value_to_hash(item)?;
     if item_hash.contains_key(key!("light")) {
       let light_value = self.get_value_from_hash(item_hash, "light")?;
-      let light = with_path!(
-        self,
-        Segment::Key("light".into()),
-        self.visit_light(light_value)
-      );
+      self.path.push(Segment::Key("light".into()));
+      let light = self.visit_light(light_value)?;
+      self.path.pop();
+
       self.lights.push(light);
     } else if item_hash.contains_key(key!("body")) {
       let body_value = self.get_value_from_hash(item_hash, "body")?;
-      let body = with_path!(
-        self,
-        Segment::Key("body".into()),
-        self.visit_body(body_value)
-      );
+      self.path.push(Segment::Key("body".into()));
+      let body = self.visit_body(body_value)?;
+      self.path.pop();
       self.bodies.push(body);
     } else if item_hash.contains_key(key!("camera")) {
       let camera_value = self.get_value_from_hash(item_hash, "camera")?;
-      let (name, camera) = with_path!(
-        self,
-        Segment::Key("camera".into()),
-        self.visit_camera(camera_value)
-      );
+      self.path.push(Segment::Key("camera".into()));
+      let (name, camera) = self.visit_camera(camera_value)?;
+      self.path.pop();
       self.cameras.insert(name, camera);
+    } else {
+      return Err(anyhow!(format!(
+        "Unknown item type found at {}",
+        self.path.to_string()
+      )));
     }
     Ok(())
   }
 
   fn visit_light(&mut self, light: &yaml::Yaml) -> ParserResult<PointLight> {
     let light_hash = self.value_to_hash(light)?;
-    let light_type = with_path!(
-      self,
-      Segment::Key("type".into()),
-      self.hash_value_to_string(light_hash, "type")
-    );
+    let light_type = self.hash_value_to_string(light_hash, "type")?;
 
     if light_type.as_ref() == "point_light" {
       let light_at_value = self.get_value_from_hash(light_hash, "at")?;
-      let light_at = with_path!(
-        self,
-        Segment::Key("at".into()),
-        self.visit_point(light_at_value)
-      );
+      self.path.push(Segment::Key("at".into()));
+      let light_at = self.visit_point(light_at_value)?;
+      self.path.pop();
+
       let light_intensity_value = self.get_value_from_hash(light_hash, "intensity")?;
-      let light_intensity = with_path!(
-        self,
-        Segment::Key("intensity".into()),
-        self.visit_color(light_intensity_value)
-      );
+      self.path.push(Segment::Key("intensity".into()));
+      let light_intensity = self.visit_color(light_intensity_value)?;
+      self.path.pop();
+
       Ok(PointLight::new(light_at, light_intensity))
     } else {
       Err(anyhow!(
-        "Unknown light type {} found at {}.",
+        "Unknown light type '{}' found at {}",
         light_type.as_ref(),
         self.path.to_string()
       ))
@@ -306,33 +305,51 @@ impl<'a> YamlParser<'a> {
   fn visit_point(&mut self, point: &yaml::Yaml) -> ParserResult<Tuple> {
     let point_array = self.value_to_array(point)?;
     let x_value = self.get_index_from_array(point_array, 0)?;
-    let x = with_path!(self, Segment::Index(0), self.value_to_float(x_value));
+    self.path.push(Segment::Index(0));
+    let x = self.value_to_float(x_value)?;
+    self.path.pop();
     let y_value = self.get_index_from_array(point_array, 1)?;
-    let y = with_path!(self, Segment::Index(1), self.value_to_float(y_value));
+    self.path.push(Segment::Index(1));
+    let y = self.value_to_float(y_value)?;
+    self.path.pop();
     let z_value = self.get_index_from_array(point_array, 2)?;
-    let z = with_path!(self, Segment::Index(2), self.value_to_float(z_value));
+    self.path.push(Segment::Index(2));
+    let z = self.value_to_float(z_value)?;
+    self.path.pop();
     Ok(Tuple::point(x, y, z))
   }
 
   fn visit_vector(&mut self, vector: &yaml::Yaml) -> ParserResult<Tuple> {
     let vector_array = self.value_to_array(vector)?;
     let x_value = self.get_index_from_array(vector_array, 0)?;
-    let x = with_path!(self, Segment::Index(0), self.value_to_float(x_value));
+    self.path.push(Segment::Index(0));
+    let x = self.value_to_float(x_value)?;
+    self.path.pop();
     let y_value = self.get_index_from_array(vector_array, 1)?;
-    let y = with_path!(self, Segment::Index(1), self.value_to_float(y_value));
+    self.path.push(Segment::Index(1));
+    let y = self.value_to_float(y_value)?;
+    self.path.pop();
     let z_value = self.get_index_from_array(vector_array, 2)?;
-    let z = with_path!(self, Segment::Index(2), self.value_to_float(z_value));
+    self.path.push(Segment::Index(2));
+    let z = self.value_to_float(z_value)?;
+    self.path.pop();
     Ok(Tuple::vector(x, y, z))
   }
 
   fn visit_color(&mut self, color: &yaml::Yaml) -> ParserResult<Color> {
     let color_array = self.value_to_array(color)?;
     let r_value = self.get_index_from_array(color_array, 0)?;
-    let r = with_path!(self, Segment::Index(0), self.value_to_float(r_value));
+    self.path.push(Segment::Index(0));
+    let r = self.value_to_float(r_value)?;
+    self.path.pop();
     let g_value = self.get_index_from_array(color_array, 1)?;
-    let g = with_path!(self, Segment::Index(1), self.value_to_float(g_value));
+    self.path.push(Segment::Index(1));
+    let g = self.value_to_float(g_value)?;
+    self.path.pop();
     let b_value = self.get_index_from_array(color_array, 2)?;
-    let b = with_path!(self, Segment::Index(2), self.value_to_float(b_value));
+    self.path.push(Segment::Index(2));
+    let b = self.value_to_float(b_value)?;
+    self.path.pop();
     Ok(Color::new(r, g, b))
   }
 
@@ -341,28 +358,27 @@ impl<'a> YamlParser<'a> {
     let mut transform = Matrix::identity();
 
     let body_hash = self.value_to_hash(body)?;
-
-    let body_type = with_path!(
-      self,
-      Segment::Key("type".into()),
-      self.hash_value_to_string(body_hash, "type")
-    );
+    let body_type = self.hash_value_to_string(body_hash, "type")?;
 
     if body_hash.contains_key(key!("material")) {
       let material_value = self.get_value_from_hash(body_hash, "material")?;
+      self.path.push(Segment::Key("material".into()));
       material = self.visit_material(material_value)?;
+      self.path.pop();
     }
 
     if body_hash.contains_key(key!("transforms")) {
       let transforms_value = self.get_value_from_hash(body_hash, "transforms")?;
+      self.path.push(Segment::Key("transform".into()));
       transform = self.visit_transforms(transforms_value)?;
+      self.path.pop();
     }
 
     match body_type.as_ref() {
       "sphere" => Ok(Body::from(Sphere::new(material, transform))),
       "plane" => Ok(Body::from(Plane::new(material, transform))),
       _ => Err(anyhow!(
-        "Unknown body type {} found at {}.",
+        "Unknown body type '{}' found at {}",
         body_type.as_ref(),
         self.path.to_string()
       )),
@@ -371,21 +387,16 @@ impl<'a> YamlParser<'a> {
 
   fn visit_material(&mut self, material: &yaml::Yaml) -> ParserResult<Material> {
     let material_hash = self.value_to_hash(material)?;
-    let material_type = with_path!(
-      self,
-      Segment::Key("type".into()),
-      self.hash_value_to_string(material_hash, "type")
-    );
+    let material_type = self.hash_value_to_string(material_hash, "type")?;
 
     if material_type.as_ref() == "phong" {
       let mut phong_material = Phong::default();
 
       if material_hash.contains_key(key!("color")) {
-        let material_color = with_path!(
-          self,
-          Segment::Key("color".into()),
-          self.visit_color(self.get_value_from_hash(material_hash, "color")?)
-        );
+        let color_value = self.get_value_from_hash(material_hash, "color")?;
+        self.path.push(Segment::Key("color".into()));
+        let material_color = self.visit_color(color_value)?;
+        self.path.pop();
         phong_material = phong_material.with_color(material_color);
       }
       if material_hash.contains_key(key!("diffuse")) {
@@ -408,7 +419,7 @@ impl<'a> YamlParser<'a> {
       Ok(Material::from(phong_material))
     } else {
       Err(anyhow!(
-        "Unknown material type {} found at {}.",
+        "Unknown material type '{}' found at {}",
         material_type.as_ref(),
         self.path.to_string()
       ))
@@ -433,10 +444,16 @@ impl<'a> YamlParser<'a> {
     let transform_type = self.hash_value_to_string(transform_hash, "type")?;
 
     if transform_type.as_ref() == "translate" {
-      let v = self.visit_vector(self.get_value_from_hash(transform_hash, "to")?)?;
+      let to_value = self.get_value_from_hash(transform_hash, "to")?;
+      self.path.push(Segment::Key("to".into()));
+      let v = self.visit_vector(to_value)?;
+      self.path.pop();
       Ok(Matrix::translation(v.x, v.y, v.z))
     } else if transform_type.as_ref() == "scale" {
-      let v = self.visit_vector(self.get_value_from_hash(transform_hash, "to")?)?;
+      let to_value = self.get_value_from_hash(transform_hash, "to")?;
+      self.path.push(Segment::Key("to".into()));
+      let v = self.visit_vector(to_value)?;
+      self.path.pop();
       Ok(Matrix::scaling(v.x, v.y, v.z))
     } else if transform_type.as_ref() == "rotate_x" {
       let radians = self.hash_value_to_float(transform_hash, "radians")?;
@@ -449,7 +466,7 @@ impl<'a> YamlParser<'a> {
       Ok(Matrix::rotation_z(radians))
     } else {
       Err(anyhow!(
-        "Unknown transform type {} found at {}.",
+        "Unknown transform type '{}' found at {}",
         transform_type.as_ref(),
         self.path.to_string()
       ))
@@ -463,15 +480,17 @@ impl<'a> YamlParser<'a> {
     let height = self.hash_value_to_int(camera_hash, "height")?;
     let fov = self.hash_value_to_float(camera_hash, "field_of_view")?;
     let to_value = self.get_value_from_hash(camera_hash, "to")?;
-    let to = with_path!(self, Segment::Key("to".into()), self.visit_point(to_value));
+    self.path.push(Segment::Key("to".into()));
+    let to = self.visit_point(to_value)?;
+    self.path.pop();
     let from_value = self.get_value_from_hash(camera_hash, "from")?;
-    let from = with_path!(
-      self,
-      Segment::Key("from".into()),
-      self.visit_point(from_value)
-    );
+    self.path.push(Segment::Key("from".into()));
+    let from = self.visit_point(from_value)?;
+    self.path.pop();
     let up_value = self.get_value_from_hash(camera_hash, "up")?;
-    let up = with_path!(self, Segment::Key("up".into()), self.visit_vector(up_value));
+    self.path.push(Segment::Key("up".into()));
+    let up = self.visit_vector(up_value)?;
+    self.path.pop();
 
     let camera = Camera::new(width.abs() as usize, height.abs() as usize, fov)
       .look_at_from_position(from, to, up);
@@ -846,5 +865,335 @@ mod tests {
     let (loaded_world, loaded_cameras) = yaml_loader.load_world(source).unwrap();
     assert_fuzzy_eq!(loaded_world, expected_world);
     assert_fuzzy_eq!(loaded_cameras, expected_cameras);
+  }
+
+  #[test]
+  fn unknown_base_item() {
+    let source = r##"
+---
+- something_unknown:
+    great: isnt it?
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!("Unknown item type found at .document[0].item[0]");
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn unknown_light_type() {
+    let source = r##"
+---
+- light:
+    type: bright_but_unknown_light
+    at: [-10, 10, -10]
+    intensity: [1, 1, 1]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected =
+      anyhow!("Unknown light type 'bright_but_unknown_light' found at .document[0].item[0].light");
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn missing_light_at_property() {
+    let source = r##"
+---
+- light:
+    type: point_light
+    intensity: [1, 1, 1]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Tried to get value with key 'at' from hash at .document[0].item[0].light: Key not found."
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn light_type_is_not_a_string() {
+    let source = r##"
+---
+- light:
+    type: 423.0
+    at: [-10, 10, -10]
+    intensity: [1, 1, 1]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected string value at .document[0].item[0].light.type, but found Real(\"423.0\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn light_at_is_not_point_array() {
+    let source = r##"
+---
+- light:
+    type: point_light
+    at: [-10, some_strange_string, -10]
+    intensity: [1, 1, 1]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!("Expected float value at .document[0].item[0].light.at[1], but found String(\"some_strange_string\")");
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn light_intensity_is_not_color_array() {
+    let source = r##"
+---
+- light:
+    type: point_light
+    at: [-10, 10, -10]
+    intensity: [1, 1, blub]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected float value at .document[0].item[0].light.intensity[2], but found String(\"blub\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn unknown_body_type() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: unknown_something
+    material:
+      type: phong
+      color: [0, 0.635, 1]
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected =
+      anyhow!("Unknown body type 'unknown_something' found at .document[0].item[0].body");
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn unknown_material_type() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: hyper_realistic_everything
+      color: [0, 0.635, 1]
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Unknown material type 'hyper_realistic_everything' found at .document[0].item[0].body.material"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn faulty_material_color() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, sparkly_red, 1]
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected float value at .document[0].item[0].body.material.color[1], but found String(\"sparkly_red\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn faulty_material_shininess() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.5, 1]
+      shininess: really_shiny
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected float value at .document[0].item[0].body.material.shininess, but found String(\"really_shiny\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn unknown_transform_type() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.5, 1]
+    transforms:
+      - type: woop_di_duuu
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Unknown transform type 'woop_di_duuu' found at .document[0].item[0].body.transform[0]"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn wrong_to_in_scale_transform() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.5, 1]
+    transforms:
+      - type: scale
+        to: foobar
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected array at .document[0].item[0].body.transform[0].to, but found String(\"foobar\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn wrong_to_in_translate_transform() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.5, 1]
+    transforms:
+      - type: scale
+        to: [1.5, 0.5, -0.5]
+      - type: translate
+        to: [1.5, 0.5, nope]
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected float value at .document[0].item[0].body.transform[1].to[2], but found String(\"nope\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
+  }
+
+  #[test]
+  fn wrong_radians_in_rotate_y_transform() {
+    let source = r##"
+---
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0, 0.5, 1]
+    transforms:
+      - type: scale
+        to: [1.5, 0.5, -0.5]
+      - type: translate
+        to: [1.5, 0.5, 12]
+      - type: rotate_y
+        radians: 90deg
+"##;
+
+    let yaml_loader = Loader::default();
+    let result = yaml_loader.load_world(source);
+    assert!(result.is_err());
+    let actual = result.unwrap_err();
+    let expected = anyhow!(
+      "Expected float value at .document[0].item[0].body.transform[2].radians, but found String(\"90deg\")"
+    );
+    assert_eq!(actual.to_string(), expected.to_string());
   }
 }

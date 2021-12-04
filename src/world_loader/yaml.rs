@@ -480,8 +480,8 @@ impl<'a> YamlParser<'a> {
 }
 
 #[derive(Default)]
-pub struct Yaml {}
-impl WorldLoader for Yaml {
+pub struct Loader {}
+impl WorldLoader for Loader {
   fn load_world<T: AsRef<str>>(&self, source: T) -> LoaderResult {
     let mut parser = YamlParser::new(source.as_ref());
     parser.parse_yaml()
@@ -558,7 +558,7 @@ mod tests {
       ),
     );
 
-    let yaml_loader = Yaml::default();
+    let yaml_loader = Loader::default();
 
     let (loaded_world, loaded_cameras) = yaml_loader.load_world(source).unwrap();
     assert_fuzzy_eq!(loaded_world, expected_world);

@@ -5,7 +5,7 @@ use std::fs::{read_to_string, write};
 use std::sync::Mutex;
 use the_ray_tracer_challenge::canvas::to_png::*;
 use the_ray_tracer_challenge::canvas::*;
-use the_ray_tracer_challenge::world_loader::yaml::Yaml;
+use the_ray_tracer_challenge::world_loader::yaml;
 use the_ray_tracer_challenge::world_loader::WorldLoader;
 
 use indicatif::ProgressBar;
@@ -30,7 +30,7 @@ Usage: {} <world.yaml>
     ));
   }
 
-  let yaml_loader = Yaml::default();
+  let yaml_loader = yaml::Loader::default();
   let source_file = &args[1];
   let source =
     read_to_string(source_file).context(format!("Could not read world file {}", source_file))?;

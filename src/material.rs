@@ -1,6 +1,7 @@
 use crate::canvas::Color;
 use crate::fuzzy_eq::*;
 use crate::light::PointLight;
+use crate::pattern::{Pattern, Stencil};
 use crate::tuple::Tuple;
 use crate::F;
 
@@ -61,6 +62,7 @@ impl Illuminated for Material {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Phong {
   pub color: Color,
+  pub pattern: Option<Pattern>,
   pub ambient: F,
   pub diffuse: F,
   pub specular: F,
@@ -71,6 +73,7 @@ impl Default for Phong {
   fn default() -> Self {
     Phong {
       color: Color::new(1.0, 1.0, 1.0),
+      pattern: None,
       ambient: 0.1,
       diffuse: 0.9,
       specular: 0.9,
@@ -81,6 +84,8 @@ impl Default for Phong {
 
 impl Phong {
   // Either create a new fully specified material or use builder functions with default
+  // @FIXME: Maybe not needed anymore could be removed and replaced by builder
+  //         functions
   pub fn new(color: Color, ambient: F, diffuse: F, specular: F, shininess: F) -> Self {
     Phong {
       color,
@@ -88,6 +93,7 @@ impl Phong {
       diffuse,
       specular,
       shininess,
+      pattern: None,
     }
   }
 
@@ -124,6 +130,7 @@ impl FuzzyEq<Phong> for Phong {
       && self.diffuse.fuzzy_eq(other.diffuse)
       && self.specular.fuzzy_eq(other.specular)
       && self.shininess.fuzzy_eq(other.shininess)
+      && self.pattern.fuzzy_eq(other.pattern)
   }
 }
 
@@ -140,7 +147,12 @@ impl Illuminated for Phong {
     let diffuse_light: Color;
     let specular_light: Color;
 
-    let effective_color = self.color * light.intensity;
+    let mut color = self.color;
+    if let Some(pattern) = self.pattern {
+      color = pattern.color_at(position);
+    }
+
+    let effective_color = color * light.intensity;
     let lightv = (light.position - position).normalize();
 
     ambient_light = effective_color * self.ambient;

@@ -19,3 +19,4 @@ pub mod sphere;
 pub mod tuple;
 pub mod world;
 pub mod world_loader;
+pub mod pattern;

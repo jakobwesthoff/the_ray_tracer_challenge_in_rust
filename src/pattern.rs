@@ -72,3 +72,71 @@ impl Stencil for Striped {
     }
   }
 }
+
+#[cfg(test)]
+mod tests {
+  use super::*;
+
+  #[test]
+  fn a_stripe_pattern_is_constant_in_y() {
+    let pattern = Striped::default();
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 1.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 2.0, 0.0))
+    );
+  }
+
+  #[test]
+  fn a_stripe_pattern_is_constant_in_z() {
+    let pattern = Striped::default();
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 0.0, 1.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 0.0, 2.0))
+    );
+  }
+
+  #[test]
+  fn a_stripe_pattern_alternates_in_x() {
+    let pattern = Striped::default();
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.9, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(1.0, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(-0.1, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(-1.0, 0.0, 0.0))
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(-1.1, 0.0, 0.0))
+    );
+  }
+}

@@ -74,6 +74,20 @@ impl FuzzyEq<String> for String {
   }
 }
 
+impl<T> FuzzyEq<Option<T>> for Option<T>
+where
+  T: Clone,
+  T: FuzzyEq<T>,
+{
+  fn fuzzy_eq(&self, other: Option<T>) -> bool {
+    match (self, other) {
+      (Some(ref option), Some(other)) => option.fuzzy_eq(other),
+      (None, None) => true,
+      _ => false,
+    }
+  }
+}
+
 // Not really sure what I am doing here, as I don't have a great understanding of macros yet.
 // Feel free to fix or enhance in the future.
 // @TODO: Check if we can ensure more explicitly the two operands implement the `FuzzyEq` trait

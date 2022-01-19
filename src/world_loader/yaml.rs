@@ -11,6 +11,7 @@ use crate::canvas::Color;
 use crate::light::PointLight;
 use crate::material::{Material, Phong};
 use crate::matrix::Matrix;
+use crate::pattern::{Pattern, Striped};
 use crate::plane::Plane;
 use crate::sphere::Sphere;
 use crate::tuple::Tuple;
@@ -353,6 +354,33 @@ impl<'a> YamlParser<'a> {
     Ok(Color::new(r, g, b))
   }
 
+  fn visit_pattern(&mut self, pattern: &yaml::Yaml) -> ParserResult<Pattern> {
+    let pattern_hash = self.value_to_hash(pattern)?;
+    let pattern_type = self.hash_value_to_string(pattern_hash, "type")?;
+
+    return match pattern_type.as_ref() {
+      "striped" => self.visit_striped_pattern(pattern_hash),
+      _ => Err(anyhow!(
+        "Unknown Pattern type '{}' found at {}",
+        pattern_type.as_ref(),
+        self.path.to_string()
+      ))
+    }
+  }
+
+  fn visit_striped_pattern(&mut self, pattern_hash: &yaml::Hash) -> ParserResult<Pattern> {
+        let color_a_value = self.get_value_from_hash(pattern_hash, "colorA")?;
+        self.path.push(Segment::Key("colorA".into()));
+        let color_a = self.visit_color(color_a_value)?;
+        self.path.pop();
+        let color_b_value = self.get_value_from_hash(pattern_hash, "colorB")?;
+        self.path.push(Segment::Key("colorB".into()));
+        let color_b = self.visit_color(color_b_value)?;
+        self.path.pop();
+
+        Ok(Pattern::from(Striped::default().with_colors(color_a, color_b)))
+  }
+
   fn visit_body(&mut self, body: &yaml::Yaml) -> ParserResult<Body> {
     let mut material = Material::default();
     let mut transform = Matrix::identity();
@@ -398,6 +426,13 @@ impl<'a> YamlParser<'a> {
         let material_color = self.visit_color(color_value)?;
         self.path.pop();
         phong_material = phong_material.with_color(material_color);
+      }
+      if material_hash.contains_key(key!("pattern")) {
+        let pattern_value = self.get_value_from_hash(material_hash, "pattern")?;
+        self.path.push(Segment::Key("pattern".into()));
+        let pattern = self.visit_pattern(pattern_value)?;
+        self.path.pop();
+        phong_material = phong_material.with_pattern(pattern);
       }
       if material_hash.contains_key(key!("diffuse")) {
         let material_diffuse = self.hash_value_to_float(material_hash, "diffuse")?;
@@ -506,6 +541,8 @@ impl WorldLoader for Loader {
     parser.parse_yaml()
   }
 }
+
+// @TODO: Add tests validating the pattern parsing syntax wihtin a material.
 
 #[cfg(test)]
 mod tests {

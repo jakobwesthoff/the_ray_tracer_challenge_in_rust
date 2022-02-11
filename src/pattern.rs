@@ -1,9 +1,19 @@
+use crate::body::{Body, Intersectable};
 use crate::canvas::Color;
 use crate::fuzzy_eq::FuzzyEq;
 use crate::tuple::Tuple;
 
 pub trait Stencil {
-  fn color_at(&self, position: Tuple) -> Color;
+  fn color_at_in_pattern_space(&self, position: Tuple) -> Color;
+
+  fn color_at(&self, position: Tuple, body: &Body) -> Color {
+    // Transform into object space
+    let object_position = body.transform().inverse() * position;
+
+    // FIXME: Have pattern support its own transform and really
+    //        transform into pattern space
+    self.color_at_in_pattern_space(object_position)
+  }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -20,9 +30,9 @@ impl FuzzyEq<Pattern> for Pattern {
 }
 
 impl Stencil for Pattern {
-  fn color_at(&self, position: Tuple) -> Color {
+  fn color_at_in_pattern_space(&self, position: Tuple) -> Color {
     match *self {
-      Pattern::Striped(ref striped) => striped.color_at(position),
+      Pattern::Striped(ref striped) => striped.color_at_in_pattern_space(position),
     }
   }
 }
@@ -63,7 +73,7 @@ impl FuzzyEq<Striped> for Striped {
 }
 
 impl Stencil for Striped {
-  fn color_at(&self, position: Tuple) -> Color {
+  fn color_at_in_pattern_space(&self, position: Tuple) -> Color {
     let x = position.x;
     if x.floor() as isize % 2 == 0 {
       self.color_a
@@ -75,68 +85,77 @@ impl Stencil for Striped {
 
 #[cfg(test)]
 mod tests {
+  use crate::sphere::Sphere;
+
   use super::*;
 
   #[test]
   fn a_stripe_pattern_is_constant_in_y() {
     let pattern = Striped::default();
+    let body = Body::from(Sphere::default());
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0), &body)
     );
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 1.0, 0.0))
+      pattern.color_at(Tuple::point(0.0, 1.0, 0.0), &body)
     );
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 2.0, 0.0))
+      pattern.color_at(Tuple::point(0.0, 2.0, 0.0), &body)
     );
   }
 
   #[test]
   fn a_stripe_pattern_is_constant_in_z() {
     let pattern = Striped::default();
+    let body = Body::from(Sphere::default());
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0), &body)
     );
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 0.0, 1.0))
+      pattern.color_at(Tuple::point(0.0, 0.0, 1.0), &body)
     );
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 0.0, 2.0))
+      pattern.color_at(Tuple::point(0.0, 0.0, 2.0), &body)
     );
   }
 
   #[test]
   fn a_stripe_pattern_alternates_in_x() {
     let pattern = Striped::default();
+    let body = Body::from(Sphere::default());
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(0.0, 0.0, 0.0))
-    );
-    assert_fuzzy_eq!(
-      Color::black(),
-      pattern.color_at(Tuple::point(0.9, 0.0, 0.0))
-    );
-    assert_fuzzy_eq!(
-      Color::white(),
-      pattern.color_at(Tuple::point(1.0, 0.0, 0.0))
-    );
-    assert_fuzzy_eq!(
-      Color::white(),
-      pattern.color_at(Tuple::point(-0.1, 0.0, 0.0))
-    );
-    assert_fuzzy_eq!(
-      Color::white(),
-      pattern.color_at(Tuple::point(-1.0, 0.0, 0.0))
+      pattern.color_at(Tuple::point(0.0, 0.0, 0.0), &body)
     );
     assert_fuzzy_eq!(
       Color::black(),
-      pattern.color_at(Tuple::point(-1.1, 0.0, 0.0))
+      pattern.color_at(Tuple::point(0.9, 0.0, 0.0), &body)
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(1.0, 0.0, 0.0), &body)
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(0.1, 0.0, 0.0), &body)
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(-0.1, 0.0, 0.0), &body)
+    );
+    assert_fuzzy_eq!(
+      Color::white(),
+      pattern.color_at(Tuple::point(-1.0, 0.0, 0.0), &body)
+    );
+    assert_fuzzy_eq!(
+      Color::black(),
+      pattern.color_at(Tuple::point(-1.1, 0.0, 0.0), &body)
     );
   }
 }

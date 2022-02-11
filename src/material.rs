@@ -1,3 +1,4 @@
+use crate::body::Body;
 use crate::canvas::Color;
 use crate::fuzzy_eq::*;
 use crate::light::PointLight;
@@ -8,6 +9,7 @@ use crate::F;
 pub trait Illuminated {
   fn lighting(
     &self,
+    body: &Body,
     light: PointLight,
     position: Tuple,
     eyev: Tuple,
@@ -47,6 +49,7 @@ impl FuzzyEq<Material> for Material {
 impl Illuminated for Material {
   fn lighting(
     &self,
+    body: &Body,
     light: PointLight,
     position: Tuple,
     eyev: Tuple,
@@ -54,7 +57,7 @@ impl Illuminated for Material {
     in_shadow: bool,
   ) -> Color {
     match *self {
-      Material::Phong(ref m) => m.lighting(light, position, eyev, normalv, in_shadow),
+      Material::Phong(ref m) => m.lighting(body, light, position, eyev, normalv, in_shadow),
     }
   }
 }
@@ -142,6 +145,7 @@ impl FuzzyEq<Phong> for Phong {
 impl Illuminated for Phong {
   fn lighting(
     &self,
+    body: &Body,
     light: PointLight,
     position: Tuple,
     eyev: Tuple,
@@ -154,7 +158,7 @@ impl Illuminated for Phong {
 
     let mut color = self.color;
     if let Some(pattern) = self.pattern {
-      color = pattern.color_at(position);
+      color = pattern.color_at(position, body);
     }
 
     let effective_color = color * light.intensity;
@@ -192,6 +196,8 @@ impl Illuminated for Phong {
 
 #[cfg(test)]
 mod tests {
+  use crate::sphere::Sphere;
+
   use super::*;
 
   #[test]
@@ -247,13 +253,14 @@ mod tests {
   #[test]
   fn lighting_with_the_eye_between_the_light_and_the_surface() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let eyev = Tuple::vector(0.0, 0.0, -1.0);
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, false);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.9, 1.9, 1.9);
 
@@ -263,6 +270,7 @@ mod tests {
   #[test]
   fn lighting_with_the_eye_between_the_light_and_the_surface_eye_offset_by_45_degrees() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let sqrt2_over_2 = (2.0 as F).sqrt() / 2.0;
@@ -270,7 +278,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, false);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.0, 1.0, 1.0);
 
@@ -280,13 +288,14 @@ mod tests {
   #[test]
   fn lighting_with_the_eye_opposite_surface_light_offset_by_45_degrees() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let eyev = Tuple::vector(0.0, 0.0, -1.0);
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, false);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, false);
 
     let expected_result = Color::new(0.7364, 0.7364, 0.7364);
 
@@ -296,6 +305,7 @@ mod tests {
   #[test]
   fn lighting_with_the_eye_in_path_of_the_reflection_vector() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let sqrt2_over_2 = (2.0 as F).sqrt() / 2.0;
@@ -303,7 +313,7 @@ mod tests {
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, false);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, false);
 
     let expected_result = Color::new(1.6364, 1.6364, 1.6364);
 
@@ -313,13 +323,14 @@ mod tests {
   #[test]
   fn lighting_with_light_behind_the_surface() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let eyev = Tuple::vector(0.0, 0.0, -1.0);
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, 10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, false);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, false);
 
     let expected_result = Color::new(0.1, 0.1, 0.1);
 
@@ -329,13 +340,14 @@ mod tests {
   #[test]
   fn lighting_with_the_surface_in_shadow() {
     let m = Phong::default();
+    let body = Body::from(Sphere::default());
     let position = Tuple::point(0.0, 0.0, 0.0);
 
     let eyev = Tuple::vector(0.0, 0.0, -1.0);
     let normalv = Tuple::vector(0.0, 0.0, -1.0);
     let light = PointLight::new(Tuple::point(0.0, 0.0, -10.0), Color::new(1.0, 1.0, 1.0));
 
-    let actual_result = m.lighting(light, position, eyev, normalv, true);
+    let actual_result = m.lighting(&body, light, position, eyev, normalv, true);
 
     let expected_result = Color::new(0.1, 0.1, 0.1);
 

@@ -55,6 +55,7 @@ fn main() {
       if let Some(hit) = hit {
         let computed = hit.get_computed();
         let color = hit.body.material().lighting(
+          &hit.body,
           light,
           computed.point,
           computed.eyev,

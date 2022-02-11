@@ -36,6 +36,7 @@ impl World {
       // @TODO: Implement proper lighting using multiple light sources
       let is_in_shadow = self.is_shadowed(c.over_point);
       material.lighting(
+        &hit.body,
         self.lights[0],
         c.over_point,
         c.eyev,

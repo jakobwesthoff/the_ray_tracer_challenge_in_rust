@@ -364,21 +364,33 @@ impl<'a> YamlParser<'a> {
         "Unknown Pattern type '{}' found at {}",
         pattern_type.as_ref(),
         self.path.to_string()
-      ))
-    }
+      )),
+    };
   }
 
   fn visit_striped_pattern(&mut self, pattern_hash: &yaml::Hash) -> ParserResult<Pattern> {
-        let color_a_value = self.get_value_from_hash(pattern_hash, "colorA")?;
-        self.path.push(Segment::Key("colorA".into()));
-        let color_a = self.visit_color(color_a_value)?;
-        self.path.pop();
-        let color_b_value = self.get_value_from_hash(pattern_hash, "colorB")?;
-        self.path.push(Segment::Key("colorB".into()));
-        let color_b = self.visit_color(color_b_value)?;
-        self.path.pop();
+    let color_a_value = self.get_value_from_hash(pattern_hash, "colorA")?;
+    self.path.push(Segment::Key("colorA".into()));
+    let color_a = self.visit_color(color_a_value)?;
+    self.path.pop();
+    let color_b_value = self.get_value_from_hash(pattern_hash, "colorB")?;
+    self.path.push(Segment::Key("colorB".into()));
+    let color_b = self.visit_color(color_b_value)?;
+    self.path.pop();
 
-        Ok(Pattern::from(Striped::default().with_colors(color_a, color_b)))
+    let mut transform = Matrix::identity();
+    if pattern_hash.contains_key(key!("transforms")) {
+      let transforms_value = self.get_value_from_hash(pattern_hash, "transforms")?;
+      self.path.push(Segment::Key("transform".into()));
+      transform = self.visit_transforms(transforms_value)?;
+      self.path.pop();
+    }
+
+    Ok(Pattern::from(
+      Striped::default()
+        .with_colors(color_a, color_b)
+        .with_transform(transform),
+    ))
   }
 
   fn visit_body(&mut self, body: &yaml::Yaml) -> ParserResult<Body> {

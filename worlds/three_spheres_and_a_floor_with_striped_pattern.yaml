@@ -11,8 +11,8 @@
       type: phong
       pattern:
         type: striped
-        colorA: [0,0,0]
-        colorB: [1,1,1]
+        colorA: [0, 0, 0]
+        colorB: [1, 1, 1]
       specular: 0.0
 
 # Left Sphere
@@ -22,8 +22,13 @@
       type: phong
       pattern:
         type: striped
-        colorA: [0,0,0]
-        colorB: [1,1,1]
+        colorA: [0, 0, 0]
+        colorB: [1, 1, 1]
+        transforms:
+          - type: translate
+            to: [0.5, 0, 0]
+          - type: rotate_z
+            radians: 0.1
     transforms:
       - type: scale
         to: [0.33, 0.33, 0.33]
@@ -37,8 +42,13 @@
       type: phong
       pattern:
         type: striped
-        colorA: [0,0,0]
-        colorB: [1,1,1]
+        colorA: [0, 0, 0]
+        colorB: [1, 1, 1]
+        transforms:
+          - type: scale
+            to: [0.1, 0.1, 0.1]
+          - type: rotate_z
+            radians: 0.78539816
       diffuse: 0.9
       specular: 1.8
     transforms:
@@ -52,8 +62,11 @@
       type: phong
       pattern:
         type: striped
-        colorA: [0,0,0]
-        colorB: [1,1,1]
+        colorA: [0, 0, 0]
+        colorB: [1, 1, 1]
+        transforms:
+          - type: scale
+            to: [0.03, 1, 1]
     transforms:
       - type: scale
         to: [0.5, 0.5, 0.5]

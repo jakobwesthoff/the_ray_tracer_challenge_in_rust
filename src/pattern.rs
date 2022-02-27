@@ -22,12 +22,15 @@ pub trait Stencil {
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Pattern {
   Striped(Striped),
+  Gradient(Gradient),
 }
 
 impl FuzzyEq<Pattern> for Pattern {
   fn fuzzy_eq(&self, other: Pattern) -> bool {
     match (self, other) {
       (Pattern::Striped(ref striped), Pattern::Striped(other)) => striped.fuzzy_eq(other),
+      (Pattern::Gradient(ref gradient), Pattern::Gradient(other)) => gradient.fuzzy_eq(other),
+      _ => false,
     }
   }
 }
@@ -36,12 +39,14 @@ impl Stencil for Pattern {
   fn color_at_in_pattern_space(&self, position: Tuple) -> Color {
     match *self {
       Pattern::Striped(ref striped) => striped.color_at_in_pattern_space(position),
+      Pattern::Gradient(ref gradient) => gradient.color_at_in_pattern_space(position),
     }
   }
 
   fn transform(&self) -> Matrix<4> {
     match *self {
       Pattern::Striped(ref striped) => striped.transform(),
+      Pattern::Gradient(ref gradient) => gradient.transform(),
     }
   }
 }
@@ -49,6 +54,12 @@ impl Stencil for Pattern {
 impl From<Striped> for Pattern {
   fn from(striped: Striped) -> Self {
     Pattern::Striped(striped)
+  }
+}
+
+impl From<Gradient> for Pattern {
+  fn from(gradient: Gradient) -> Self {
+    Pattern::Gradient(gradient)
   }
 }
 
@@ -98,6 +109,58 @@ impl Stencil for Striped {
     } else {
       self.color_b
     }
+  }
+
+  fn transform(&self) -> Matrix<4> {
+    self.transform
+  }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Gradient {
+  color_a: Color,
+  color_b: Color,
+  transform: Matrix<4>,
+}
+
+impl Default for Gradient {
+  fn default() -> Self {
+    Self {
+      color_a: Color::red(),
+      color_b: Color::green(),
+      transform: Default::default(),
+    }
+  }
+}
+
+impl Gradient {
+  pub fn with_colors(mut self, color_a: Color, color_b: Color) -> Self {
+    self.color_a = color_a;
+    self.color_b = color_b;
+    self
+  }
+
+  pub fn with_transform(mut self, transform: Matrix<4>) -> Self {
+    self.transform = transform;
+    self
+  }
+}
+
+impl FuzzyEq<Gradient> for Gradient {
+  fn fuzzy_eq(&self, other: Gradient) -> bool {
+    self.color_a.fuzzy_eq(other.color_a)
+      && self.color_b.fuzzy_eq(other.color_b)
+      && self.transform.fuzzy_eq(other.transform)
+  }
+}
+
+impl Stencil for Gradient {
+  fn color_at_in_pattern_space(&self, position: Tuple) -> Color {
+    let x = position.x;
+    let fraction_of_x = x - x.floor();
+    let distance_of_colors = self.color_b - self.color_a;
+
+    self.color_a + distance_of_colors * fraction_of_x
   }
 
   fn transform(&self) -> Matrix<4> {

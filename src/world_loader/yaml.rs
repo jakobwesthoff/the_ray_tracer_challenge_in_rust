@@ -569,8 +569,6 @@ impl WorldLoader for Loader {
   }
 }
 
-// @TODO: Add tests validating the pattern parsing syntax wihtin a material.
-
 #[cfg(test)]
 mod tests {
   use crate::body::Body;
@@ -1294,5 +1292,91 @@ mod tests {
       * Matrix::rotation_x(PI);
 
     assert_eq!(expected_transform, body.transform());
+  }
+
+  #[test]
+  fn striped_pattern_in_body_is_parsed() {
+    let source = r##"
+---
+- body:
+    type: sphere
+    material:
+      type: phong
+      pattern:
+        type: striped
+        colorA: [0,0,0]
+        colorB: [1,1,1]
+        transforms:
+          - type: scale
+            to: [.2,.2,.2]
+          - type: rotate_z
+            degrees: 45
+"##;
+
+    let color_a = Color::new(0.0, 0.0, 0.0);
+    let color_b = Color::new(1.0, 1.0, 1.0);
+    let pattern_transform =
+      Matrix::rotation_z((45.0 / 180.0) * PI) * Matrix::scaling(0.2, 0.2, 0.2);
+    let pattern = Pattern::from(
+      Striped::default()
+        .with_colors(color_a, color_b)
+        .with_transform(pattern_transform),
+    );
+
+    let material = Material::from(Phong::default().with_pattern(pattern));
+    let body_transform = Matrix::identity();
+    let sphere = Sphere::default()
+      .with_material(material)
+      .with_transform(body_transform);
+    let body = Body::from(sphere);
+
+    let yaml_loader = Loader::default();
+
+    let (loaded_world, _) = yaml_loader.load_world(source).unwrap();
+    assert_eq!(1, loaded_world.bodies.len());
+    assert_fuzzy_eq!(body, loaded_world.bodies[0]);
+  }
+
+  #[test]
+  fn colorful_striped_pattern_in_body_is_parsed() {
+    let source = r##"
+---
+- body:
+    type: sphere
+    material:
+      type: phong
+      pattern:
+        type: striped
+        colorA: [0.1,0.2,0.3]
+        colorB: [0.4,0.5,0.6]
+        transforms:
+          - type: scale
+            to: [.2,.2,.2]
+          - type: rotate_z
+            degrees: 90
+"##;
+
+    let color_a = Color::new(0.1, 0.2, 0.3);
+    let color_b = Color::new(0.4, 0.5, 0.6);
+    let pattern_transform =
+      Matrix::rotation_z((90.0 / 180.0) * PI) * Matrix::scaling(0.2, 0.2, 0.2);
+    let pattern = Pattern::from(
+      Striped::default()
+        .with_colors(color_a, color_b)
+        .with_transform(pattern_transform),
+    );
+
+    let material = Material::from(Phong::default().with_pattern(pattern));
+    let body_transform = Matrix::identity();
+    let sphere = Sphere::default()
+      .with_material(material)
+      .with_transform(body_transform);
+    let body = Body::from(sphere);
+
+    let yaml_loader = Loader::default();
+
+    let (loaded_world, _) = yaml_loader.load_world(source).unwrap();
+    assert_eq!(1, loaded_world.bodies.len());
+    assert_fuzzy_eq!(body, loaded_world.bodies[0]);
   }
 }

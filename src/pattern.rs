@@ -84,7 +84,7 @@ impl Striped {
 
 impl FuzzyEq<Striped> for Striped {
   fn fuzzy_eq(&self, other: Striped) -> bool {
-    self.color_a.fuzzy_eq(other.color_b) && self.color_b.fuzzy_eq(other.color_b)
+    self.color_a.fuzzy_eq(other.color_a) && self.color_b.fuzzy_eq(other.color_b)
   }
 }
 

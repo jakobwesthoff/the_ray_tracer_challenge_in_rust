@@ -33,6 +33,18 @@ impl Color {
     Color::new(1.0, 1.0, 1.0)
   }
 
+  pub fn red() -> Self {
+    Color::new(1.0, 0.0, 0.0)
+  }
+
+  pub fn green() -> Self {
+    Color::new(0.0, 1.0, 0.0)
+  }
+
+  pub fn blue() -> Self {
+    Color::new(0.0, 0.0, 1.0)
+  }
+
   pub fn clamp(&self, lower_bound: F, upper_bound: F) -> Color {
     Color::new(
       self.red.min(upper_bound).max(lower_bound),

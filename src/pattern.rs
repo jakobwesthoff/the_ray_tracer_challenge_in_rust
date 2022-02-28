@@ -23,6 +23,7 @@ pub trait Stencil {
 pub enum Pattern {
   Striped(Striped),
   Gradient(Gradient),
+  Ring(Ring),
 }
 
 impl FuzzyEq<Pattern> for Pattern {
@@ -30,6 +31,7 @@ impl FuzzyEq<Pattern> for Pattern {
     match (self, other) {
       (Pattern::Striped(ref striped), Pattern::Striped(other)) => striped.fuzzy_eq(other),
       (Pattern::Gradient(ref gradient), Pattern::Gradient(other)) => gradient.fuzzy_eq(other),
+      (Pattern::Ring(ref ring), Pattern::Ring(other)) => ring.fuzzy_eq(other),
       _ => false,
     }
   }
@@ -40,6 +42,7 @@ impl Stencil for Pattern {
     match *self {
       Pattern::Striped(ref striped) => striped.color_at_in_pattern_space(position),
       Pattern::Gradient(ref gradient) => gradient.color_at_in_pattern_space(position),
+      Pattern::Ring(ref ring) => ring.color_at_in_pattern_space(position),
     }
   }
 
@@ -47,6 +50,7 @@ impl Stencil for Pattern {
     match *self {
       Pattern::Striped(ref striped) => striped.transform(),
       Pattern::Gradient(ref gradient) => gradient.transform(),
+      Pattern::Ring(ref ring) => ring.transform(),
     }
   }
 }
@@ -62,6 +66,13 @@ impl From<Gradient> for Pattern {
     Pattern::Gradient(gradient)
   }
 }
+
+impl From<Ring> for Pattern {
+  fn from(ring: Ring) -> Self {
+    Pattern::Ring(ring)
+  }
+}
+
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Striped {
@@ -161,6 +172,63 @@ impl Stencil for Gradient {
     let distance_of_colors = self.color_b - self.color_a;
 
     self.color_a + distance_of_colors * fraction_of_x
+  }
+
+  fn transform(&self) -> Matrix<4> {
+    self.transform
+  }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Ring {
+  color_a: Color,
+  color_b: Color,
+  transform: Matrix<4>,
+}
+
+impl Default for Ring {
+  fn default() -> Self {
+    Self {
+      color_a: Color::yellow(),
+      color_b: Color::blue(),
+      transform: Default::default(),
+    }
+  }
+}
+
+impl Ring {
+  pub fn with_colors(mut self, color_a: Color, color_b: Color) -> Self {
+    self.color_a = color_a;
+    self.color_b = color_b;
+    self
+  }
+
+  pub fn with_transform(mut self, transform: Matrix<4>) -> Self {
+    self.transform = transform;
+    self
+  }
+}
+
+impl FuzzyEq<Ring> for Ring {
+  fn fuzzy_eq(&self, other: Ring) -> bool {
+    self.color_a.fuzzy_eq(other.color_a)
+      && self.color_b.fuzzy_eq(other.color_b)
+      && self.transform.fuzzy_eq(other.transform)
+  }
+}
+
+impl Stencil for Ring {
+  fn color_at_in_pattern_space(&self, position: Tuple) -> Color {
+    let x = position.x;
+    let y = position.y;
+
+    let distance_from_center = (x.powf(2.0) + y.powf(2.0)).sqrt();
+
+    if distance_from_center.floor() as i64 % 2 == 0 {
+      self.color_a
+    } else {
+      self.color_b
+    }
   }
 
   fn transform(&self) -> Matrix<4> {

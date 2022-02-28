@@ -63,12 +63,16 @@
     material:
       type: phong
       pattern:
-        type: striped
-        colorA: [0, 0, 0]
-        colorB: [1, 1, 1]
+        type: ring
+        colorA: [1, 1, 0]
+        colorB: [0, 0, 1]
         transforms:
           - type: scale
-            to: [0.03, 1, 1]
+            to: [0.02, 0.02, 1]
+          # - type: translate
+          #   to: [1, 0, 0]
+          - type: rotate_y
+            degrees: -45
     transforms:
       - type: scale
         to: [0.5, 0.5, 0.5]

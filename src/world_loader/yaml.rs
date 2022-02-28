@@ -214,6 +214,27 @@ impl<'a> YamlParser<'a> {
     }
   }
 
+  #[inline(always)]
+  fn value_to_bool<'b>(&self, yaml: &yaml::Yaml) -> ParserResult<bool> {
+    match yaml {
+      yaml::Yaml::Boolean(content) => Ok(*content),
+      _ => Err(anyhow!(
+        "Expected boolean value at {}, but found {:?}",
+        self.path.to_string(),
+        yaml
+      )),
+    }
+  }
+
+  #[inline(always)]
+  fn hash_value_to_bool(&mut self, hash: &yaml::Hash, key: impl AsRef<str>) -> ParserResult<bool> {
+    self.path.push(Segment::Key(key.as_ref().into()));
+    let value = self.get_value_from_hash(hash, key)?;
+    let result = self.value_to_bool(value);
+    self.path.pop();
+    result
+  }
+
   pub fn parse_yaml(&mut self) -> LoaderResult {
     let yaml = YamlLoader::load_from_str(self.data)?;
     self.visit_documents(&yaml)
@@ -457,6 +478,13 @@ impl<'a> YamlParser<'a> {
     let color_b = self.visit_color(color_b_value)?;
     self.path.pop();
 
+    let third_dimension;
+    if pattern_hash.contains_key(key!("3d")) {
+      third_dimension = self.hash_value_to_bool(pattern_hash, "3d")?;
+    } else {
+      third_dimension = true;
+    }
+
     let mut transform = Matrix::identity();
     if pattern_hash.contains_key(key!("transforms")) {
       let transforms_value = self.get_value_from_hash(pattern_hash, "transforms")?;
@@ -468,7 +496,8 @@ impl<'a> YamlParser<'a> {
     Ok(Pattern::from(
       CheckerBoard::default()
         .with_colors(color_a, color_b)
-        .with_transform(transform),
+        .with_transform(transform)
+        .with_third_dimension(third_dimension),
     ))
   }
 

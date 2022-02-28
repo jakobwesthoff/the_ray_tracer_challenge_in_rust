@@ -251,6 +251,7 @@ impl Stencil for Ring {
 pub struct CheckerBoard {
   color_a: Color,
   color_b: Color,
+  third_dimension: bool,
   transform: Matrix<4>,
 }
 
@@ -259,6 +260,7 @@ impl Default for CheckerBoard {
     Self {
       color_a: Color::black(),
       color_b: Color::white(),
+      third_dimension: true,
       transform: Default::default(),
     }
   }
@@ -275,6 +277,11 @@ impl CheckerBoard {
     self.transform = transform;
     self
   }
+
+  pub fn with_third_dimension(mut self, third_dimension: bool) -> Self {
+    self.third_dimension = third_dimension;
+    self
+  }
 }
 
 impl FuzzyEq<CheckerBoard> for CheckerBoard {
@@ -282,6 +289,7 @@ impl FuzzyEq<CheckerBoard> for CheckerBoard {
     self.color_a.fuzzy_eq(other.color_a)
       && self.color_b.fuzzy_eq(other.color_b)
       && self.transform.fuzzy_eq(other.transform)
+      && self.third_dimension == other.third_dimension
   }
 }
 
@@ -291,7 +299,9 @@ impl Stencil for CheckerBoard {
     let y = position.y;
     let z = position.z;
 
-    if (x.floor() + y.floor() + z.floor()) as i64 % 2 == 0 {
+    if (self.third_dimension && ((x.floor() + y.floor() + z.floor()) as i64 % 2) == 0)
+      || (!self.third_dimension && ((x.floor() + y.floor()) as i64 % 2) == 0)
+    {
       self.color_a
     } else {
       self.color_b

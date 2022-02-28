@@ -215,7 +215,7 @@ impl<'a> YamlParser<'a> {
   }
 
   #[inline(always)]
-  fn value_to_bool<'b>(&self, yaml: &yaml::Yaml) -> ParserResult<bool> {
+  fn value_to_bool(&self, yaml: &yaml::Yaml) -> ParserResult<bool> {
     match yaml {
       yaml::Yaml::Boolean(content) => Ok(*content),
       _ => Err(anyhow!(

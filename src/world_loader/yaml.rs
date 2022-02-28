@@ -12,7 +12,7 @@ use crate::canvas::Color;
 use crate::light::PointLight;
 use crate::material::{Material, Phong};
 use crate::matrix::Matrix;
-use crate::pattern::{Pattern, Striped, Gradient, Ring};
+use crate::pattern::{CheckerBoard, Gradient, Pattern, Ring, Striped};
 use crate::plane::Plane;
 use crate::sphere::Sphere;
 use crate::tuple::Tuple;
@@ -363,6 +363,7 @@ impl<'a> YamlParser<'a> {
       "striped" => self.visit_striped_pattern(pattern_hash),
       "gradient" => self.visit_gradient_pattern(pattern_hash),
       "ring" => self.visit_ring_pattern(pattern_hash),
+      "checkerboard" => self.visit_checkerboard_pattern(pattern_hash),
       _ => Err(anyhow!(
         "Unknown Pattern type '{}' found at {}",
         pattern_type.as_ref(),
@@ -441,6 +442,31 @@ impl<'a> YamlParser<'a> {
 
     Ok(Pattern::from(
       Ring::default()
+        .with_colors(color_a, color_b)
+        .with_transform(transform),
+    ))
+  }
+
+  fn visit_checkerboard_pattern(&mut self, pattern_hash: &yaml::Hash) -> ParserResult<Pattern> {
+    let color_a_value = self.get_value_from_hash(pattern_hash, "colorA")?;
+    self.path.push(Segment::Key("colorA".into()));
+    let color_a = self.visit_color(color_a_value)?;
+    self.path.pop();
+    let color_b_value = self.get_value_from_hash(pattern_hash, "colorB")?;
+    self.path.push(Segment::Key("colorB".into()));
+    let color_b = self.visit_color(color_b_value)?;
+    self.path.pop();
+
+    let mut transform = Matrix::identity();
+    if pattern_hash.contains_key(key!("transforms")) {
+      let transforms_value = self.get_value_from_hash(pattern_hash, "transforms")?;
+      self.path.push(Segment::Key("transform".into()));
+      transform = self.visit_transforms(transforms_value)?;
+      self.path.pop();
+    }
+
+    Ok(Pattern::from(
+      CheckerBoard::default()
         .with_colors(color_a, color_b)
         .with_transform(transform),
     ))

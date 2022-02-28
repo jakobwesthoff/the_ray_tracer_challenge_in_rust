@@ -10,7 +10,7 @@
     material:
       type: phong
       pattern:
-        type: striped
+        type: checkerboard
         colorA: [0, 0, 0]
         colorB: [1, 1, 1]
       specular: 0.0

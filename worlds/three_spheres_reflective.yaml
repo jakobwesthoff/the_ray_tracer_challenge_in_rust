@@ -1,0 +1,95 @@
+---
+- light:
+    type: point_light
+    at: [-10, 10, -10]
+    intensity: [1, 1, 1]
+
+# Floor
+- body:
+    type: plane
+    material:
+      type: phong
+      pattern:
+        type: checkerboard
+        colorA: [0, 0, 0]
+        colorB: [1, 1, 1]
+      specular: 0.0
+      reflectiveness: 0.5
+
+# Left Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      pattern:
+        type: gradient
+        colorA: [1, 0, 0]
+        colorB: [0, 1, 0]
+        transforms:
+          - type: scale
+            to: [2, 2, 2]
+          - type: translate
+            to: [1, 0, 0]
+          - type: rotate_z
+            degrees: 270
+    transforms:
+      - type: scale
+        to: [0.33, 0.33, 0.33]
+      - type: translate
+        to: [-1.5, 0.33, -0.75]
+
+# Middle Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      color: [0.0, 0.0, 0.0]
+      diffuse: 0.1
+      specular: 5.0
+      shininess: 1600.0
+      reflectiveness: 1.0
+    transforms:
+      - type: translate
+        to: [-0.5, 1.0, 0.5]
+
+# Right Sphere
+- body:
+    type: sphere
+    material:
+      type: phong
+      pattern:
+        type: ring
+        colorA: [1, 1, 0]
+        colorB: [0, 0, 1]
+        transforms:
+          - type: scale
+            to: [0.02, 0.02, 1]
+          # - type: translate
+          #   to: [1, 0, 0]
+          - type: rotate_y
+            degrees: -45
+    transforms:
+      - type: scale
+        to: [0.5, 0.5, 0.5]
+      - type: translate
+        to: [1.5, 0.5, -0.5]
+
+# Camera
+- camera:
+    name: main_camera
+    width: 3840
+    height: 2160
+    field_of_view: 1.047 # PI/3
+    from: [0, 1.5, -5]
+    to: [0, 1, 0]
+    up: [0, 1, 0]
+
+# Camera further moved down
+- camera:
+    name: second_camera
+    width: 3840
+    height: 2160
+    field_of_view: 1.047 # PI/3
+    from: [1, 0.5, -5]
+    to: [0, 1, 0]
+    up: [0, 1, 0]

@@ -81,25 +81,12 @@ impl Default for Phong {
       diffuse: 0.9,
       specular: 0.9,
       shininess: 200.0,
+      reflective: 0.0,
     }
   }
 }
 
 impl Phong {
-  // Either create a new fully specified material or use builder functions with default
-  // @FIXME: Maybe not needed anymore could be removed and replaced by builder
-  //         functions
-  pub fn new(color: Color, ambient: F, diffuse: F, specular: F, shininess: F) -> Self {
-    Phong {
-      color,
-      ambient,
-      diffuse,
-      specular,
-      shininess,
-      pattern: None,
-    }
-  }
-
   pub fn with_color(mut self, color: Color) -> Self {
     self.color = color;
     self
@@ -209,23 +196,6 @@ mod tests {
     assert_fuzzy_eq!(m.diffuse, 0.9);
     assert_fuzzy_eq!(m.specular, 0.9);
     assert_fuzzy_eq!(m.shininess, 200.0);
-  }
-
-  #[test]
-  fn phong_material_can_be_constructed_with_properties() {
-    let color = Color::new(1.0, 1.0, 0.0);
-    let ambient = 0.05;
-    let diffuse = 0.7;
-    let specular = 0.95;
-    let shininess = 400.0;
-
-    let m = Phong::new(color, ambient, diffuse, specular, shininess);
-
-    assert_fuzzy_eq!(m.color, color);
-    assert_fuzzy_eq!(m.ambient, ambient);
-    assert_fuzzy_eq!(m.diffuse, diffuse);
-    assert_fuzzy_eq!(m.specular, specular);
-    assert_fuzzy_eq!(m.shininess, shininess);
   }
 
   #[test]

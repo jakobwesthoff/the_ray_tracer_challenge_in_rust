@@ -728,7 +728,14 @@ mod tests {
 
     let expected_world = World::new(
       vec![Body::from(Sphere::new(
-        Material::from(Phong::new(Color::new(1.0, 1.0, 1.0), 0.1, 0.7, 0.0, 200.0)),
+        Material::from(
+          Phong::default()
+            .with_color(Color::new(1.0, 1.0, 1.0))
+            .with_ambient(0.1)
+            .with_diffuse(0.7)
+            .with_specular(0.0)
+            .with_shininess(200.0),
+        ),
         Matrix::rotation_x(3.14) * Matrix::translation(1.0, 2.0, 3.0),
       ))],
       vec![PointLight::new(
@@ -799,7 +806,14 @@ mod tests {
 
     let expected_world = World::new(
       vec![Body::from(Sphere::new(
-        Material::from(Phong::new(Color::new(1.0, 1.0, 1.0), 0.1, 0.7, 0.0, 200.0)),
+        Material::from(
+          Phong::default()
+            .with_color(Color::new(1.0, 1.0, 1.0))
+            .with_ambient(0.1)
+            .with_diffuse(0.7)
+            .with_specular(0.0)
+            .with_shininess(200.0),
+        ),
         Matrix::rotation_x(3.14) * Matrix::translation(1.0, 2.0, 3.0),
       ))],
       vec![PointLight::new(

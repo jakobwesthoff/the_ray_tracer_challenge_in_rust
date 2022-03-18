@@ -274,7 +274,12 @@ mod tests {
 
   #[test]
   fn sphere_may_be_assigned_a_material() {
-    let phong = Phong::new(Color::new(1.0, 1.0, 0.0), 0.05, 0.7, 0.95, 400.0);
+    let phong = Phong::default()
+      .with_color(Color::new(1.0, 1.0, 0.0))
+      .with_ambient(0.05)
+      .with_diffuse(0.7)
+      .with_specular(0.95)
+      .with_shininess(400.0);
     let m = Material::from(phong);
     let s = Sphere::default().with_material(m);
 

@@ -8,6 +8,12 @@ pub struct PointLight {
   pub intensity: Color,
 }
 
+impl Default for PointLight {
+  fn default() -> Self {
+    Self::new(Tuple::point(0.0, 0.0, 0.0), Color::white())
+  }
+}
+
 impl PointLight {
   pub fn new(position: Tuple, intensity: Color) -> Self {
     PointLight {

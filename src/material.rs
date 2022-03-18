@@ -70,6 +70,7 @@ pub struct Phong {
   pub diffuse: F,
   pub specular: F,
   pub shininess: F,
+  pub reflectiveness: F,
 }
 
 impl Default for Phong {
@@ -81,7 +82,7 @@ impl Default for Phong {
       diffuse: 0.9,
       specular: 0.9,
       shininess: 200.0,
-      reflective: 0.0,
+      reflectiveness: 0.0,
     }
   }
 }
@@ -114,6 +115,11 @@ impl Phong {
 
   pub fn with_pattern(mut self, pattern: Pattern) -> Self {
     self.pattern = Some(pattern);
+    self
+  }
+
+  pub fn with_reflectiveness(mut self, reflectiveness: F) -> Self {
+    self.reflectiveness = reflectiveness;
     self
   }
 }
@@ -322,5 +328,19 @@ mod tests {
     let expected_result = Color::new(0.1, 0.1, 0.1);
 
     assert_fuzzy_eq!(actual_result, expected_result);
+  }
+
+  #[test]
+  fn phong_material_has_reflective_zero_by_default() {
+    let m = Phong::default();
+
+    assert_fuzzy_eq!(0.0, m.reflectiveness);
+  }
+
+  #[test]
+  fn phong_material_has_builder_function_for_reflectiveness() {
+    let m = Phong::default().with_reflectiveness(0.42);
+
+    assert_fuzzy_eq!(0.42, m.reflectiveness);
   }
 }

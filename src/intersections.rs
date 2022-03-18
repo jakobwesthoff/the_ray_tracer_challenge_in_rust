@@ -28,7 +28,9 @@ impl Intersection {
 
     let over_point = position + normalv * EPSILON;
 
-    ComputedIntersection::new(self, position, over_point, normalv, eyev, inside)
+    let reflectv = self.ray.direction.reflect(normalv);
+
+    ComputedIntersection::new(self, position, over_point, normalv, eyev, reflectv, inside)
   }
 }
 
@@ -92,6 +94,7 @@ mod tests {
   use crate::fuzzy_eq::*;
   use crate::material::Material;
   use crate::matrix::Matrix;
+  use crate::plane::Plane;
   use crate::sphere::Sphere;
   use crate::tuple::Tuple;
 
@@ -148,6 +151,23 @@ mod tests {
     assert_fuzzy_eq!(c.point, Tuple::point(0.0, 0.0, -1.0));
     assert_fuzzy_eq!(c.eyev, Tuple::vector(0.0, 0.0, -1.0));
     assert_fuzzy_eq!(c.normalv, Tuple::vector(0.0, 0.0, -1.0));
+  }
+
+  #[test]
+  fn precomputing_reflection_vector() {
+    let body = Body::from(Plane::default());
+    let r = Ray::new(
+      Tuple::point(0.0, 1.0, -1.0),
+      Tuple::vector(0.0, -(2.0 as F).sqrt() / 2.0, (2.0 as F).sqrt() / 2.0),
+    );
+    let intersection = Intersection::new((2.0 as F).sqrt(), r, body);
+
+    let computations = intersection.get_computed();
+
+    assert_fuzzy_eq!(
+      computations.reflectv,
+      Tuple::vector(0.0, (2.0 as F).sqrt() / 2.0, (2.0 as F).sqrt() / 2.0)
+    );
   }
 
   #[test]

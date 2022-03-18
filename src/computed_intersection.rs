@@ -8,6 +8,7 @@ pub struct ComputedIntersection<'a> {
   pub over_point: Tuple,
   pub normalv: Tuple,
   pub eyev: Tuple,
+  pub reflectv: Tuple,
   pub inside: bool,
 }
 
@@ -18,6 +19,7 @@ impl<'a> ComputedIntersection<'a> {
     over_point: Tuple,
     normalv: Tuple,
     eyev: Tuple,
+    reflectv: Tuple,
     inside: bool,
   ) -> Self {
     ComputedIntersection {
@@ -26,6 +28,7 @@ impl<'a> ComputedIntersection<'a> {
       over_point,
       normalv,
       eyev,
+      reflectv,
       inside,
     }
   }

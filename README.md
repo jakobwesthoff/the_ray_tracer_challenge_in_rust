@@ -27,7 +27,7 @@ me](https://www.youtube.com/playlist?list=PLy68GuC77sUTyOUvDhVboQoOlHoa4XrSO) an
 - [X] Chapter 07: Making a Scene
 - [X] Chapter 08: Shadows
 - [X] Chapter 09: Planes
-- [ ] Chapter 10: Patterns
+- [X] Chapter 10: Patterns
 - [ ] Chapter 11: Reflection and Refraction
 - [ ] Chapter 12: Cubes
 - [ ] Chapter 13: Cylinders

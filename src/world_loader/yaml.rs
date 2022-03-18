@@ -570,6 +570,10 @@ impl<'a> YamlParser<'a> {
         let material_shininess = self.hash_value_to_float(material_hash, "shininess")?;
         phong_material = phong_material.with_shininess(material_shininess);
       }
+      if material_hash.contains_key(key!("reflectiveness")) {
+        let material_reflectiveness = self.hash_value_to_float(material_hash, "reflectiveness")?;
+        phong_material = phong_material.with_reflectiveness(material_reflectiveness);
+      }
 
       Ok(Material::from(phong_material))
     } else {

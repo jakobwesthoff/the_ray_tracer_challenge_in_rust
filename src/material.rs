@@ -18,6 +18,10 @@ pub trait Illuminated {
   ) -> Color;
 }
 
+pub trait Reflective {
+  fn reflectiveness(&self) -> F;
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Material {
   Phong(Phong),
@@ -58,6 +62,14 @@ impl Illuminated for Material {
   ) -> Color {
     match *self {
       Material::Phong(ref m) => m.lighting(body, light, position, eyev, normalv, in_shadow),
+    }
+  }
+}
+
+impl Reflective for Material {
+  fn reflectiveness(&self) -> F {
+    match *self {
+      Material::Phong(ref m) => m.reflectiveness(),
     }
   }
 }
@@ -184,6 +196,12 @@ impl Illuminated for Phong {
     }
 
     ambient_light + diffuse_light + specular_light
+  }
+}
+
+impl Reflective for Phong {
+  fn reflectiveness(&self) -> F {
+    self.reflectiveness
   }
 }
 

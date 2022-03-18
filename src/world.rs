@@ -1,9 +1,10 @@
 use crate::body::{Body, Intersectable};
 use crate::canvas::Color;
+use crate::computed_intersection::ComputedIntersection;
 use crate::fuzzy_eq::FuzzyEq;
 use crate::intersections::Intersections;
 use crate::light::PointLight;
-use crate::material::Illuminated;
+use crate::material::{Illuminated, Material, Reflective};
 use crate::ray::Ray;
 use crate::tuple::Tuple;
 
@@ -11,11 +12,18 @@ use crate::tuple::Tuple;
 pub struct World {
   pub bodies: Vec<Body>,
   pub lights: Vec<PointLight>,
+  reflection_limit: usize,
 }
 
 impl World {
   pub fn new(bodies: Vec<Body>, lights: Vec<PointLight>) -> Self {
-    World { bodies, lights }
+    // FIXME: Make reflection_limit configurable
+    // FIXME: Switch to builder pattern
+    World {
+      bodies,
+      lights,
+      ..Default::default()
+    }
   }
 
   pub fn intersect(&self, ray: Ray) -> Intersections {
@@ -28,6 +36,10 @@ impl World {
   }
 
   pub fn color_at(&self, ray: Ray) -> Color {
+    self.color_at_with_reflection_limit(ray, self.reflection_limit)
+  }
+
+  fn color_at_with_reflection_limit(&self, ray: Ray, remaining_reflections: usize) -> Color {
     let xs = self.intersect(ray);
     let hit = xs.hit();
     if let Some(hit) = hit {
@@ -35,17 +47,41 @@ impl World {
       let material = hit.body.material();
       // @TODO: Implement proper lighting using multiple light sources
       let is_in_shadow = self.is_shadowed(c.over_point);
-      material.lighting(
+      let surface_color = material.lighting(
         &hit.body,
         self.lights[0],
         c.over_point,
         c.eyev,
         c.normalv,
         is_in_shadow,
-      )
+      );
+
+      let reflected_color = self.reflected_color_at(&material, &c, remaining_reflections);
+
+      surface_color + reflected_color
     } else {
       Color::black()
     }
+  }
+
+  fn reflected_color_at(
+    &self,
+    material: &Material,
+    computed_intersection: &ComputedIntersection,
+    remaining_reflections: usize,
+  ) -> Color {
+    if material.reflectiveness() == 0.0 || remaining_reflections == 0 {
+      // We hit a non reflective body
+      return Color::black();
+    }
+    let reflected_ray = Ray::new(
+      computed_intersection.over_point,
+      computed_intersection.reflectv,
+    );
+    let reflected_color =
+      self.color_at_with_reflection_limit(reflected_ray, remaining_reflections - 1);
+
+    reflected_color * material.reflectiveness()
   }
 
   fn is_shadowed(&self, position: Tuple) -> bool {
@@ -70,6 +106,7 @@ impl Default for World {
     World {
       bodies: vec![],
       lights: vec![],
+      reflection_limit: 5,
     }
   }
 }
@@ -93,6 +130,7 @@ mod tests {
 
   fn create_default_world() -> World {
     let light = PointLight::new(Tuple::point(-10.0, 10.0, -10.0), Color::new(1.0, 1.0, 1.0));
+    // @FIXME: Rafactor to use new builder pattern.
     let material = Phong {
       color: Color::new(0.8, 1.0, 0.6),
       diffuse: 0.7,
@@ -208,5 +246,55 @@ mod tests {
     let c = w.color_at(r);
 
     assert_fuzzy_eq!(c, Color::new(0.1, 0.1, 0.1));
+  }
+
+  #[test]
+  fn reflection_color_if_non_reflective_body_is_hit() {
+    let non_reflective_material = Material::from(
+      Phong::default()
+        .with_color(Color::new(0.8, 1.0, 0.6))
+        .with_ambient(1.0)
+        .with_reflectiveness(0.0),
+    );
+    let s1 = Body::from(Sphere::default().with_material(non_reflective_material));
+    let world = World::new(vec![s1], vec![]);
+    let ray = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
+
+    let intersection = Intersection::new(1.0, ray, s1);
+    let reflected_color = world.reflected_color_at(
+      &intersection.body.material(),
+      &intersection.get_computed(),
+      1,
+    );
+
+    assert_fuzzy_eq!(reflected_color, Color::black());
+  }
+
+  #[test]
+  fn reflection_color_if_reflective_body_is_hit() {
+    let non_reflective_material = Material::from(
+      Phong::default()
+        .with_color(Color::new(0.5, 0.25, 0.125))
+        .with_ambient(1.0)
+        .with_reflectiveness(0.5),
+    );
+    let s1 = Body::from(Sphere::default().with_material(non_reflective_material));
+    let world = World::new(
+      vec![s1],
+      vec![PointLight::new(
+        Tuple::point(10.0, 10.0, 10.0),
+        Color::white(),
+      )],
+    );
+    let ray = Ray::new(Tuple::point(0.0, 0.0, 0.0), Tuple::vector(0.0, 0.0, 1.0));
+
+    let intersection = Intersection::new(1.0, ray, s1);
+    let reflected_color = world.reflected_color_at(
+      &intersection.body.material(),
+      &intersection.get_computed(),
+      2,
+    );
+
+    assert_fuzzy_eq!(reflected_color, Color::new(0.25, 0.125, 0.0625));
   }
 }

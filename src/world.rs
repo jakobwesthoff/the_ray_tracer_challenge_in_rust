@@ -121,7 +121,8 @@ impl FuzzyEq<World> for World {
 mod tests {
   use crate::canvas::Color;
   use crate::fuzzy_eq::*;
-  use crate::material::{Material, Phong};
+  use crate::intersections::Intersection;
+use crate::material::{Material, Phong};
   use crate::matrix::Matrix;
   use crate::sphere::Sphere;
   use crate::tuple::Tuple;

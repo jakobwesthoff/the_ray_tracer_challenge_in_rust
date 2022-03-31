@@ -122,7 +122,7 @@ mod tests {
   use crate::canvas::Color;
   use crate::fuzzy_eq::*;
   use crate::intersections::Intersection;
-use crate::material::{Material, Phong};
+  use crate::material::{Material, Phong};
   use crate::matrix::Matrix;
   use crate::sphere::Sphere;
   use crate::tuple::Tuple;
@@ -296,6 +296,6 @@ use crate::material::{Material, Phong};
       2,
     );
 
-    assert_fuzzy_eq!(reflected_color, Color::new(0.25, 0.125, 0.0625));
+    assert_fuzzy_eq!(reflected_color, Color::new(0.375, 0.1875, 0.09375));
   }
 }
